@@ -55,7 +55,9 @@ jobs:
       - name: Generate Factur-X PDF
         run: bundle exec ruby spec/support/generate_verapdf_fixture.rb "$RUNNER_TEMP/facturx.pdf"
       - name: Validate PDF/A-3b conformance
-        run: java -jar "$RUNNER_TEMP/verapdf.jar" --flavour 3b --format text "$RUNNER_TEMP/facturx.pdf"
+        run: >-
+          java -jar "$RUNNER_TEMP/verapdf.jar" --flavour 3b
+          --maxfailuresdisplayed 10 "$RUNNER_TEMP/facturx.pdf"
 
   package:
     runs-on: ubuntu-latest
