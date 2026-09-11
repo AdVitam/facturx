@@ -14,7 +14,7 @@ gem 'facturx'
 
 Then run `bundle install`.
 
-Composition requires Ghostscript 9.54 or newer with `zugferd.ps` and an RGB ICC profile installed on the system. Debian and Ubuntu packages normally provide them with `apt install ghostscript`.
+Composition requires Ghostscript 9.54 or newer with `zugferd.ps` and an RGB ICC profile installed on the system. Package contents vary by operating system and distribution: after installing Ghostscript, verify that both resources are present and configure their paths as described below when automatic discovery cannot find them.
 
 ## Usage
 
