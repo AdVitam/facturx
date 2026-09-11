@@ -49,10 +49,6 @@ module Facturx
         xmp = parse_xmp(result.metadata)
         verify_xmp!(xmp, profile)
         true
-      rescue VerificationError
-        raise
-      rescue NoMethodError, TypeError => e
-        raise VerificationError.new('PDF verification input is invalid', reason: :invalid_input, cause: e.class.name)
       end
 
       private

@@ -106,6 +106,12 @@ RSpec.describe Facturx::Pdf::Verifier do
       .to include(reason: :xmp_mismatch, field: :facturx_conformance_level)
   end
 
+  it 'does not mask programmer errors as verification failures' do
+    expect do
+      verifier.call(result:, expected_xml: xml, expected_page_count: 1, profile: Object.new)
+    end.to raise_error(NoMethodError)
+  end
+
   def verification_error(result: self.result, expected_xml: xml, expected_page_count: 1, profile: self.profile)
     verifier.call(result:, expected_xml:, expected_page_count:, profile:)
     raise 'Expected verification to fail'
