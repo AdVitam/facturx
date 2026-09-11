@@ -11,3 +11,6 @@ All notable changes to this project will be documented in this file.
 - Validate Factur-X 1.09.2 XML against its profile XSD.
 - Compose PDF/A-3b Factur-X documents with Ghostscript.
 - Extract embedded Factur-X XML from PDF documents.
+
+[Unreleased]: https://github.com/AdVitam/facturx/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/AdVitam/facturx/releases/tag/v0.1.0

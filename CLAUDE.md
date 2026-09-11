@@ -36,7 +36,7 @@ Collaborators are constructor-injected with defaults, and specs pass fakes inste
 
 `FACTURX_EMBEDDING` (`lib/facturx/embedding.rb`) is the single source for filename, relationship, document type, version, and XMP namespace, shared by composer, extractor, and verifier. `Profiles` (`lib/facturx/profiles.rb`) is the single source for guideline URNs, XSD paths, and conformance levels.
 
-Ghostscript runs as an external process: `Locator` resolves the binary, `zugferd.ps`, and the ICC profile (overrides `GHOSTSCRIPT_BIN`, `FACTURX_ZUGFERD_PS`, `FACTURX_ICC_PROFILE`, then platform candidates), `VersionProbe` enforces 9.54 or newer, and `Runner` executes inside a `mktmpdir` with `--permit-file-read` restricted to the four known paths.
+Ghostscript runs as an external process: `Locator` resolves the binary, `zugferd.ps`, and the ICC profile (overrides `GHOSTSCRIPT_BIN`, `FACTURX_ZUGFERD_PS`, `FACTURX_ICC_PROFILE`, then platform candidates), `VersionProbe` enforces 9.54 or newer, `Composers::Ghostscript#call` stages the inputs in a `mktmpdir` and restricts `--permit-file-read` to the four known paths, and `Runner` executes the command with a timeout and bounded output capture.
 
 ## Rules
 
