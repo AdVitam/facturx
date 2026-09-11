@@ -19,7 +19,7 @@ module Facturx
         -sColorConversionStrategy=RGB
       ].freeze
 
-      Paths = Struct.new(:directory, :input, :xml, :output, keyword_init: true)
+      Paths = Data.define(:input, :xml, :output)
 
       def initialize(locator: Locator.new, runner: Runner.new)
         @locator = locator
@@ -57,7 +57,6 @@ module Facturx
 
       def paths_for(directory)
         Paths.new(
-          directory:,
           input: File.join(directory, INPUT_FILENAME),
           xml: File.join(directory, FACTURX_EMBEDDING.filename),
           output: File.join(directory, OUTPUT_FILENAME)

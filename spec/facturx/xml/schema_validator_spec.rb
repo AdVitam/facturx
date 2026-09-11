@@ -48,9 +48,22 @@ RSpec.describe Facturx::Xml::SchemaValidator do
       .to raise_error(Facturx::XsdValidationError, 'Unable to load the Factur-X missing schema')
   end
 
+  it 'does not wrap schema validation failures as schema load failures' do
+    expect { validation_failure_validator.call(document: minimum_document, profile: minimum_profile) }
+      .to raise_error(Nokogiri::XML::SyntaxError, 'validation failure')
+  end
+
   def validation_error(document)
     validator.call(document: document, profile: minimum_profile)
   rescue Facturx::XsdValidationError => e
     e
+  end
+
+  def validation_failure_validator
+    validator_class = Class.new(described_class)
+    schema = instance_double(Nokogiri::XML::Schema)
+    allow(Nokogiri::XML).to receive(:Schema).and_return(schema)
+    allow(schema).to receive(:validate).and_raise(Nokogiri::XML::SyntaxError, 'validation failure')
+    validator_class.new
   end
 end

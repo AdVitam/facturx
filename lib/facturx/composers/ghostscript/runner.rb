@@ -9,12 +9,7 @@ module Facturx
   module Composers
     class Ghostscript
       class Runner
-        Result = Struct.new(:stdout, :stderr, :exit_status, keyword_init: true) do
-          def initialize(...)
-            super
-            freeze
-          end
-        end
+        Result = Data.define(:stdout, :stderr, :exit_status)
 
         DEFAULT_TIMEOUT = 60
         DEFAULT_OUTPUT_LIMIT = 8_192

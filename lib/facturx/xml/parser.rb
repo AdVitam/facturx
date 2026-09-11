@@ -16,7 +16,7 @@ module Facturx
         raise InvalidXmlError.new(
           'XML is malformed',
           errors: [{ message: e.message, line: e.line, column: e.column }.freeze].freeze
-        ), cause: e
+        )
       end
     end
   end

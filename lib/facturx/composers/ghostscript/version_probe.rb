@@ -53,7 +53,7 @@ module Facturx
             'Unable to determine the Ghostscript version',
             reason: :version_unavailable,
             probe_error: error.details
-          ), cause: error
+          )
         end
       end
     end

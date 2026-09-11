@@ -32,14 +32,14 @@ module Facturx
         return true if validation_errors.empty?
 
         raise_validation_error(profile, validation_errors)
-      rescue SystemCallError, Nokogiri::XML::SyntaxError => e
-        raise_schema_load_error(profile, e)
       end
 
       private
 
       def load_schema(profile)
         self.class.send(:load_schema, File.expand_path(profile.xsd_path))
+      rescue SystemCallError, Nokogiri::XML::SyntaxError => e
+        raise_schema_load_error(profile, e)
       end
 
       def raise_validation_error(profile, validation_errors)
@@ -59,7 +59,7 @@ module Facturx
           "Unable to load the Factur-X #{profile.id} schema",
           profile: profile.id,
           errors: [{ message: error.message }.freeze].freeze
-        ), cause: error
+        )
       end
     end
   end
