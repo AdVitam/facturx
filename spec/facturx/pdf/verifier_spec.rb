@@ -34,7 +34,7 @@ RSpec.describe Facturx::Pdf::Verifier do
   end
 
   it 'accepts matching attachment and XMP metadata' do
-    expect(verifier.call(result:, expected_xml: xml, expected_page_count: 1, profile:)).to be(true)
+    expect { verifier.call(result:, expected_xml: xml, expected_page_count: 1, profile:) }.not_to raise_error
   end
 
   it 'compares XML as exact bytes' do
@@ -80,8 +80,10 @@ RSpec.describe Facturx::Pdf::Verifier do
   end
 
   it 'accepts PDF/A identification stored as RDF attributes' do
-    expect(verifier.call(result: result.with(metadata: metadata_with_pdfaid_attributes), expected_xml: xml,
-                         expected_page_count: 1, profile:)).to be(true)
+    expect do
+      verifier.call(result: result.with(metadata: metadata_with_pdfaid_attributes), expected_xml: xml,
+                    expected_page_count: 1, profile:)
+    end.not_to raise_error
   end
 
   it 'rejects duplicate XMP properties even when one value matches' do

@@ -48,7 +48,6 @@ module Facturx
         verify_result!(result, expected_xml, expected_page_count)
         xmp = parse_xmp(result.metadata)
         verify_xmp!(xmp, profile)
-        true
       end
 
       private
