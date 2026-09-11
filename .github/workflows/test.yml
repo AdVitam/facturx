@@ -1,0 +1,78 @@
+name: Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - run: bundle exec rubocop
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ['3.2', '3.3', '3.4', '4.0']
+    name: Ruby ${{ matrix.ruby }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-ghostscript
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - run: bundle exec rspec
+
+  pdfa-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-ghostscript
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Download veraPDF 1.30.2
+        env:
+          VERAPDF_SHA256: 0a3e8da7240fc18c6f9556a1aea670764f42a9a7fe772060385326706dfd1b5b
+          VERAPDF_URL: https://artifactory.openpreservation.org/artifactory/vera-dev/org/verapdf/apps/cli/1.30.2/cli-1.30.2.jar
+        run: |
+          curl --fail --location --silent --show-error "$VERAPDF_URL" --output "$RUNNER_TEMP/verapdf.jar"
+          echo "$VERAPDF_SHA256  $RUNNER_TEMP/verapdf.jar" | sha256sum --check --strict
+      - name: Generate Factur-X PDF
+        run: bundle exec ruby spec/support/generate_verapdf_fixture.rb "$RUNNER_TEMP/facturx.pdf"
+      - name: Validate PDF/A-3b conformance
+        run: >-
+          java -jar "$RUNNER_TEMP/verapdf.jar" --flavour 3b
+          --maxfailuresdisplayed 10 "$RUNNER_TEMP/facturx.pdf"
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Verify bundled schema integrity
+        working-directory: lib/facturx/schema
+        run: sha256sum --check --strict SHA256SUMS
+      - name: Build and inspect gem
+        run: |
+          bundle exec rake build
+          gem specification pkg/facturx-*.gem --yaml > /dev/null
+          gem install pkg/facturx-*.gem --no-document
+          ruby -e "require 'facturx'; abort unless Facturx::VERSION"
