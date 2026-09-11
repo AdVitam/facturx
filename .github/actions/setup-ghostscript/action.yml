@@ -1,0 +1,19 @@
+name: Setup Ghostscript
+description: Install Ghostscript and its Factur-X composition script
+
+runs:
+  using: composite
+  steps:
+    - name: Install Ghostscript
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install --yes ghostscript
+    - name: Install pinned zugferd.ps
+      shell: bash
+      env:
+        ZUGFERD_PS_SHA256: 9bdcb12d7fdc3c360cb02028c68c3f54c31539be4f236466728885143bd9ecee
+        ZUGFERD_PS_URL: https://raw.githubusercontent.com/ArtifexSoftware/ghostpdl/ghostpdl-10.06.0/lib/zugferd.ps
+      run: |
+        path="$RUNNER_TEMP/zugferd.ps"
+        curl --fail --location --silent --show-error "$ZUGFERD_PS_URL" --output "$path"
+        echo "$ZUGFERD_PS_SHA256  $path" | sha256sum --check --strict
+        echo "FACTURX_ZUGFERD_PS=$path" >> "$GITHUB_ENV"
