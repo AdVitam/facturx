@@ -1,0 +1,25 @@
+name: Delete Closed PR Branch
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  delete-branch:
+    if: >-
+      github.event.pull_request.merged == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete internal head branch
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `heads/${context.payload.pull_request.head.ref}`,
+            });

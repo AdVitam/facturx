@@ -1,0 +1,10 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  claude-review:
+    uses: AdVitam/scripts/.github/workflows/claude-code-review-reusable.yml@master
+    secrets: inherit

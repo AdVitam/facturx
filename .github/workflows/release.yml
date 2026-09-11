@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Build gem
+        run: bundle exec rake build
+      - uses: rubygems/configure-rubygems-credentials@6861877652452567c1a007a50badad3d316fc9ba
+      - name: Push to RubyGems
+        run: |
+          gem="pkg/facturx-${GITHUB_REF_NAME#v}.gem"
+          output=$(gem push "$gem" 2>&1) || {
+            if echo "$output" | grep -Eqi 'already been pushed|repushing of gem versions is not allowed'; then
+              echo "skip: $gem already on RubyGems"
+            else
+              echo "$output"
+              exit 1
+            fi
+          }
+          echo "$output"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          notes=$(awk -v v="${TAG#v}" '
+            $0 ~ "^## \\[" v "\\]" {grab=1; next}
+            grab && /^## \\[/ {exit}
+            grab && /^\\[[^]]+\\]:/ {exit}
+            grab {print}
+          ' CHANGELOG.md)
+          if [ -z "$notes" ]; then
+            notes="See [CHANGELOG.md](CHANGELOG.md)."
+          fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes "$notes"
+          else
+            gh release create "$TAG" --title "$TAG" --notes "$notes"
+          fi
