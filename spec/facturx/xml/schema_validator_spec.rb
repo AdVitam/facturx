@@ -21,7 +21,7 @@ RSpec.describe Facturx::Xml::SchemaValidator do
     it "validates a #{profile.id} invoice with the complete imported XSD set" do
       document = parser.call(xml: xml_fixture(profile.id))
 
-      expect(validator.call(document: document, profile: profile)).to be(true)
+      expect { validator.call(document: document, profile: profile) }.not_to raise_error
     end
   end
 

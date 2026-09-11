@@ -29,9 +29,7 @@ module Facturx
 
       def call(document:, profile:)
         validation_errors = load_schema(profile).validate(document)
-        return true if validation_errors.empty?
-
-        raise_validation_error(profile, validation_errors)
+        raise_validation_error(profile, validation_errors) unless validation_errors.empty?
       end
 
       private
