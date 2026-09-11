@@ -34,10 +34,24 @@ RSpec.describe Facturx::Pdf::Inspector do
       .and have_attributes(details: include(protection: :signature))
   end
 
+  it 'normalizes malformed errors raised while inspecting signatures' do
+    stub_reader_with_malformed_signature(build_pdf)
+
+    expect(inspector_error(build_pdf)).to be_a(Facturx::InvalidPdfError)
+      .and have_attributes(details: include(reason: :malformed, cause: 'PDF::Reader::MalformedPDFError'))
+  end
+
   def inspector_error(pdf)
     inspector.call(pdf)
     raise 'Expected inspection to fail'
   rescue Facturx::InvalidPdfError => e
     e
+  end
+
+  def stub_reader_with_malformed_signature(pdf)
+    reader = PDF::Reader.new(StringIO.new(pdf))
+    allow(PDF::Reader).to receive(:new).and_return(reader)
+    allow(reader.objects).to receive(:any?)
+      .and_raise(PDF::Reader::MalformedPDFError, 'malformed signature object')
   end
 end

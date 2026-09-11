@@ -11,8 +11,8 @@ module Facturx
       attr_reader :catalog, :reader
 
       class << self
-        def open(pdf)
-          parse(pdf)
+        def open(pdf, reject_signed: false)
+          parse(pdf, reject_signed:)
         rescue InvalidPdfError
           raise
         rescue PDF::Reader::MalformedPDFError, PDF::Reader::UnsupportedFeatureError,
@@ -22,13 +22,17 @@ module Facturx
 
         private
 
-        def parse(pdf)
+        def parse(pdf, reject_signed:)
           raise InvalidPdfError.new('PDF must be a byte string', reason: :invalid_input) unless pdf.is_a?(String)
 
           reader = build_reader(pdf)
           raise encrypted_error if reader.objects.encrypted?
 
-          new(reader).tap(&:validate!)
+          document = new(reader)
+          document.validate!
+          raise signed_error if reject_signed && document.signed?
+
+          document
         end
 
         def build_reader(pdf)
@@ -39,6 +43,10 @@ module Facturx
 
         def encrypted_error
           ProtectedPdfError.new('Encrypted PDFs are not supported', protection: :encryption)
+        end
+
+        def signed_error
+          ProtectedPdfError.new('Signed PDFs are not supported', protection: :signature)
         end
 
         def invalid_error(error)
