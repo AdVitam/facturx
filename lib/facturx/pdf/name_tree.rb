@@ -28,7 +28,7 @@ module Facturx
 
         entries(node[:Names]) + children(node).flat_map { |child| collect(child, visited) }
       ensure
-        visited.delete(key) if key
+        visited.delete(key)
       end
 
       def entries(reference)

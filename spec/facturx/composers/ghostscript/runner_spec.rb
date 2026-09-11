@@ -18,6 +18,12 @@ RSpec.describe Facturx::Composers::Ghostscript::Runner do
     expect(error.details).to include(exit_status: 7, stderr: valid_bounded_stderr)
   end
 
+  it 'normalizes a signal termination into an exit status' do
+    error = composition_error { described_class.new.call(ruby_command('Process.kill(:TERM, Process.pid)')) }
+
+    expect(error.details).to include(exit_status: 143)
+  end
+
   it 'terminates a process which exceeds the timeout' do
     runner = described_class.new(timeout: 0.05, termination_grace: 0.05)
     error = composition_error { runner.call(ruby_command('sleep 10')) }

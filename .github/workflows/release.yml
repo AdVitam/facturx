@@ -40,8 +40,8 @@ jobs:
         run: |
           notes=$(awk -v v="${TAG#v}" '
             $0 ~ "^## \\[" v "\\]" {grab=1; next}
-            grab && /^## \\[/ {exit}
-            grab && /^\\[[^]]+\\]:/ {exit}
+            grab && /^## \[/ {exit}
+            grab && /^\[[^]]+\]:/ {exit}
             grab {print}
           ' CHANGELOG.md)
           if [ -z "$notes" ]; then

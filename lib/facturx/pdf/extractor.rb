@@ -86,7 +86,7 @@ module Facturx
       end
 
       def validate_names!(names)
-        return if names.any? && names.all?(FACTURX_EMBEDDING.filename)
+        return if names.all?(FACTURX_EMBEDDING.filename)
 
         raise ExtractionError.new('Factur-X attachment has an invalid filename', reason: :invalid_filename,
                                                                                  filenames: names)

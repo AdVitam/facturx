@@ -61,8 +61,12 @@ module Facturx
           Result.new(
             stdout: stdout_reader.value,
             stderr: stderr_reader.value,
-            exit_status: status.exitstatus
+            exit_status: exit_status(status)
           )
+        end
+
+        def exit_status(status)
+          status.exitstatus || (128 + status.termsig)
         end
 
         def raise_failed(result)
