@@ -132,6 +132,12 @@ RSpec.describe Facturx::Reader do
     )
   end
 
+  it 'keeps the first present BT-8 after an empty first tax breakdown value' do
+    reading = reader.call(xml_with_empty_tax_code)
+    expect([reading.document.vat_point_date_code, tax_diagnostic_counts(reading), unmapped_diagnostics?(reading)])
+      .to eq(['35', [0, 1, 0], false])
+  end
+
   it 'emits each tax diagnostic once when the first breakdown is absent or malformed' do
     readings = [xml_without_header_tax, xml_with_empty_tax_code, xml_with_invalid_tax_date].map do |xml|
       reader.call(xml)

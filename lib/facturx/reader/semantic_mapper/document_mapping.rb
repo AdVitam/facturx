@@ -27,7 +27,7 @@ module Facturx
           result.merge!(scalar_attributes(:document, group_id, except: DOCUMENT_COMPOSITE_ATTRIBUTES))
         end
         attributes.merge(vat_point_date: tax_breakdowns.vat_point_date,
-                         vat_point_date_code: tax_breakdowns.items.first&.due_date_type_code)
+                         vat_point_date_code: tax_breakdowns.items.find(&:due_date_type_code)&.due_date_type_code)
       end
 
       def reference_document_attributes
