@@ -55,7 +55,6 @@ module Facturx
       def global_party_identifiers(node)
         node.xpath('./ram:GlobalID', NAMESPACES).map do |global_id|
           @terms.mark(global_id)
-          @terms.mark(global_id.attribute('schemeID'))
           Identifier.new(value: global_id.text, scheme_id: global_id['schemeID'])
         end
       end

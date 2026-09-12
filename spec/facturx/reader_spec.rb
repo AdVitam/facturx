@@ -124,6 +124,14 @@ RSpec.describe Facturx::Reader do
       .to eq([Date.new(2023, 1, 1), '35', false])
   end
 
+  it 'keeps the first present BT-7 across tax breakdowns without unmapped diagnostics' do
+    readings = [xml_with_two_tax_breakdowns(dates: %w[20230101 20230202]),
+                xml_with_two_tax_breakdowns(dates: [nil, '20230202'])].map { |xml| reader.call(xml) }
+    expect(readings.map { |reading| [reading.document.vat_point_date, unmapped_diagnostics?(reading)] }).to eq(
+      [[Date.new(2023, 1, 1), false], [Date.new(2023, 2, 2), false]]
+    )
+  end
+
   it 'emits each tax diagnostic once when the first breakdown is absent or malformed' do
     readings = [xml_without_header_tax, xml_with_empty_tax_code, xml_with_invalid_tax_date].map do |xml|
       reader.call(xml)
@@ -142,6 +150,14 @@ RSpec.describe Facturx::Reader do
     credit_transfer = reader.call(xml_with_basic_credit_transfer).document.payment.credit_transfers.first
     expect(credit_transfer).to have_attributes(
       account_identifier: Facturx::Identifier.new(value: 'FR761234'), provider_identifier: nil
+    )
+  end
+
+  it 'maps a payment provider once for zero, one, or two credit transfers' do
+    readings = [0, 1, 2].map { |count| reader.call(xml_with_credit_transfers(count)) }
+    expect(readings.map { |reading| credit_transfer_attributes(reading) }).to eq(
+      [[[], false], [[Facturx::Identifier.new(value: 'BIC')], false],
+       [[Facturx::Identifier.new(value: 'BIC'), Facturx::Identifier.new(value: 'BIC')], false]]
     )
   end
 
@@ -274,6 +290,15 @@ RSpec.describe Facturx::Reader do
     [['REFERENCE', direct_debit, nil, false], ['REFERENCE', direct_debit, nil, false]]
   end
 
+  def credit_transfer_attributes(reading)
+    transfers = reading.document.payment.credit_transfers
+    [transfers.map(&:provider_identifier), reading.diagnostics.any? { |item| item.term_id == 'BT-86' }]
+  end
+
+  def unmapped_diagnostics?(reading)
+    reading.diagnostics.any? { |item| item.code == :unmapped_element }
+  end
+
   def defective_xml
     minimum_xml
       .sub('<ram:ID>F-2023-001</ram:ID>', '<ram:ID>F-2023-001</ram:ID><ram:ID>duplicate</ram:ID>')
@@ -313,16 +338,17 @@ RSpec.describe Facturx::Reader do
     complete_en16931_xml.sub('<ram:ApplicableHeaderTradeDelivery/>', delivery)
   end
 
-  def xml_with_two_tax_breakdowns
-    tax = lambda do |category|
+  def xml_with_two_tax_breakdowns(dates: %w[20230101 20230101])
+    tax = lambda do |category, date|
+      tax_point = "<ram:TaxPointDate><udt:DateString format=\"102\">#{date}</udt:DateString></ram:TaxPointDate>" if date
       '<ram:ApplicableTradeTax><ram:TypeCode>VAT</ram:TypeCode>' \
         "<ram:CategoryCode>#{category}</ram:CategoryCode>" \
-        '<ram:TaxPointDate><udt:DateString format="102">20230101</udt:DateString></ram:TaxPointDate>' \
+        "#{tax_point}" \
         '<ram:DueDateTypeCode>35</ram:DueDateTypeCode></ram:ApplicableTradeTax>'
     end
     marker = "<ram:ApplicableTradeTax>\n                <ram:TypeCode>VAT</ram:TypeCode>\n                " \
              "<ram:CategoryCode>S</ram:CategoryCode>\n            </ram:ApplicableTradeTax>"
-    en16931_xml.sub(marker, "#{tax.call('S')}#{tax.call('Z')}")
+    en16931_xml.sub(marker, "#{tax.call('S', dates[0])}#{tax.call('Z', dates[1])}")
   end
 
   def xml_without_header_tax
@@ -357,6 +383,18 @@ RSpec.describe Facturx::Reader do
               '</ram:SpecifiedTradePaymentTerms>'
     marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
     xml.sub(marker, "#{marker}#{payment}")
+  end
+
+  def xml_with_credit_transfers(count)
+    accounts = (1..count).map do |number|
+      "<ram:PayeePartyCreditorFinancialAccount><ram:IBANID>ACCOUNT#{number}</ram:IBANID>" \
+        '</ram:PayeePartyCreditorFinancialAccount>'
+    end.join
+    payment = '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode>' \
+              '<ram:PayeeSpecifiedCreditorFinancialInstitution><ram:BICID>BIC</ram:BICID>' \
+              "</ram:PayeeSpecifiedCreditorFinancialInstitution>#{accounts}</ram:SpecifiedTradeSettlementPaymentMeans>"
+    marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
+    en16931_xml.sub(marker, "#{marker}#{payment}")
   end
 
   def xml_with_references

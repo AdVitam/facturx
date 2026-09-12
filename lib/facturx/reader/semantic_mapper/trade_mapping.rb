@@ -8,11 +8,13 @@ module Facturx
       def read_tax_breakdowns
         nodes = group_nodes('BG-23')
         base = group_xpath('BG-23')
+        vat_point_date = nil
         items = nodes.map do |node|
+          tax_point_date = value('BT-7', context: node, base_xpath: base)
+          vat_point_date ||= tax_point_date
           attributes = scalar_attributes(:tax_breakdown, 'BG-23', context: node, base_xpath: base)
           TaxBreakdown.new(type_code: technical_value('./ram:TypeCode', node), **attributes)
         end
-        vat_point_date = value('BT-7', context: nodes.first, base_xpath: base) if nodes.first
         TaxBreakdownResult.new(items:, vat_point_date:)
       end
 

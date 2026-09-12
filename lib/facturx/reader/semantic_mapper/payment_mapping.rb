@@ -23,27 +23,27 @@ module Facturx
       end
 
       def payment_means_attributes(node, base)
+        provider = term_for(:credit_transfer, 'BG-16', :provider_identifier)
+        provider_identifier = identifier(provider&.id, context: node, base_xpath: base)
         scalar_attributes(:payment_instructions, 'BG-16', context: node, base_xpath: base).merge(
-          credit_transfers: credit_transfers(node, base),
+          credit_transfers: credit_transfers(node, base, provider_identifier),
           payment_card: payment_card(node, base)
         )
       end
 
-      def credit_transfers(parent, parent_base)
+      def credit_transfers(parent, parent_base, provider_identifier)
         group_nodes('BG-17', context: parent, base_xpath: parent_base).map do |node|
-          credit_transfer(node, parent, parent_base)
+          credit_transfer(node, provider_identifier)
         end
       end
 
-      def credit_transfer(node, parent, parent_base)
+      def credit_transfer(node, provider_identifier)
         base = group_xpath('BG-17')
         account = term_for(:credit_transfer, 'BG-17', :account_identifier)
-        provider = term_for(:credit_transfer, 'BG-16', :provider_identifier)
         attributes = scalar_attributes(:credit_transfer, 'BG-17', context: node, base_xpath: base,
                                                                   except: [:account_identifier])
         CreditTransfer.new(**attributes, account_identifier: identifier(account.id, context: node, base_xpath: base),
-                                         provider_identifier: identifier(provider&.id, context: parent,
-                                                                                       base_xpath: parent_base))
+                                         provider_identifier:)
       end
 
       def payment_card(parent, parent_base)

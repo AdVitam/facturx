@@ -36,7 +36,6 @@ module Facturx
         return unless global_id
 
         @terms.mark(global_id)
-        @terms.mark(global_id.attribute('schemeID'))
         Identifier.new(value: global_id.text, scheme_id: global_id['schemeID'])
       end
     end
