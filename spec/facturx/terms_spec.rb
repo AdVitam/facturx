@@ -37,6 +37,11 @@ RSpec.describe Facturx::Terms do
     expect(differences).to all(be_empty)
   end
 
+  it 'returns shared empty indexes for unknown profiles' do
+    expect([registry.for_profile(:unknown).equal?(described_class::EMPTY_TERMS),
+            registry.groups_for_profile(:unknown).equal?(described_class::EMPTY_GROUPS)]).to eq([true, true])
+  end
+
   it 'uses immutable profile and group indexes' do
     expect([described_class.for_profile(:en16931), described_class.groups_for_profile(:en16931),
             described_class.group('BG-23')]).to eq(index_entries)

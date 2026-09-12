@@ -23,6 +23,8 @@ module Facturx
     TYPES = %i[string decimal date_102 boolean binary].freeze
     SCALES = [nil, 2].freeze
     CARDINALITIES = ['0..1', '1..1', '0..n', '1..n'].freeze
+    EMPTY_TERMS = [].freeze
+    EMPTY_GROUPS = [].freeze
 
     ALL = [
       *TermDeclarations::DOCUMENT,
@@ -66,12 +68,12 @@ module Facturx
 
     def for_profile(profile)
       profile_id = profile.respond_to?(:id) ? profile.id : profile.to_sym
-      TERMS_BY_PROFILE.fetch(profile_id)
+      TERMS_BY_PROFILE.fetch(profile_id, EMPTY_TERMS)
     end
 
     def groups_for_profile(profile)
       profile_id = profile.respond_to?(:id) ? profile.id : profile.to_sym
-      GROUPS_BY_PROFILE.fetch(profile_id)
+      GROUPS_BY_PROFILE.fetch(profile_id, EMPTY_GROUPS)
     end
 
     def validate!
