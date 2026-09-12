@@ -38,6 +38,10 @@ module Facturx
             return observe_missing_price(config, kind:) unless value
             return unrepresentable(config.fetch(:ids).first, 'Price requires an amount') unless value.amount
 
+            represented_attributes = %i[amount basis_quantity]
+            represented_attributes << :discount if kind == :gross
+            report_unrepresentable_attributes('BG-29', value, represented_attributes:)
+
             container(parent, config.fetch(:element)) do |node|
               emit_price(node, value, config.fetch(:ids))
               gross_discount(node, value.discount) if kind == :gross

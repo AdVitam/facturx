@@ -184,6 +184,45 @@ RSpec.describe Facturx::Writer do
         expect { writer.call(document: same_currency_tax_total_document, profile:) }
           .to raise_conformance_error_for('BT-111', code: :invalid_value)
       end
+
+      it 'reports a payee VAT identifier unsupported by its group' do
+        expect { writer.call(document: payee_with_vat_document, profile:) }
+          .to raise_unrepresentable_attribute('BG-10', :party, :vat_identifier)
+      end
+
+      it 'reports a ship-to VAT identifier unsupported by its group' do
+        expect { writer.call(document: ship_to_with_vat_document, profile:) }
+          .to raise_unrepresentable_attribute('BG-13', :party, :vat_identifier)
+      end
+
+      it 'keeps supported seller attributes valid' do
+        expect { writer.call(document:, profile:) }.not_to raise_error
+      end
+
+      it 'reports unrepresentable direct reference attributes' do
+        expect { writer.call(document: document_with_reference_name, profile:) }
+          .to raise_conformance_error_for('BT-14', code: :invalid_value)
+      end
+
+      it 'reports a net price discount' do
+        expect { writer.call(document: document_with_net_discount, profile:) }
+          .to raise_unrepresentable_attribute('BG-29', :price, :discount)
+      end
+
+      it 'reports an adjustment tax amount' do
+        expect { writer.call(document: document_with_adjustment_tax_amount, profile:) }
+          .to raise_unrepresentable_attribute('BG-20', :tax_breakdown, :tax_amount)
+      end
+
+      it 'reports a line tax amount' do
+        expect { writer.call(document: document_with_line_tax_amount, profile:) }
+          .to raise_unrepresentable_attribute('BG-30', :tax_breakdown, :tax_amount)
+      end
+
+      it 'reports a VAT point date without a tax breakdown' do
+        expect { writer.call(document: document_without_tax_breakdowns, profile:) }
+          .to raise_unrepresentable_attribute('BG-23', :document, :vat_point_date)
+      end
     end
   end
 
@@ -246,6 +285,18 @@ RSpec.describe Facturx::Writer do
     end
   end
 
+  def raise_unrepresentable_attribute(group_id, model, attribute)
+    raise_error(Facturx::ConformanceError) do |error|
+      expect(error.details.fetch(:report).issues).to include(
+        have_attributes(
+          code: :unrepresentable_attribute,
+          group_id:,
+          details: { model:, attribute: }
+        )
+      )
+    end
+  end
+
   def unrepresentable_gross_price_document
     line = document.lines.first.with(
       gross_price: Facturx::Price.new(basis_quantity: document.lines.first.quantity)
@@ -267,6 +318,40 @@ RSpec.describe Facturx::Writer do
       tax_currency: document.currency,
       totals: document.totals.with(tax_total: BigDecimal('40'), tax_total_in_tax_currency: BigDecimal('44'))
     )
+  end
+
+  def payee_with_vat_document
+    document.with(payee: document.payee.with(vat_identifier: Facturx::Identifier.new(value: 'FR123')))
+  end
+
+  def ship_to_with_vat_document
+    party = document.delivery.party.with(vat_identifier: Facturx::Identifier.new(value: 'FR123'))
+    document.with(delivery: document.delivery.with(party:))
+  end
+
+  def document_with_reference_name
+    document.with(sales_order_reference: document.sales_order_reference.with(name: 'Order'))
+  end
+
+  def document_with_net_discount
+    line = document.lines.first.with(net_price: document.lines.first.net_price.with(discount: BigDecimal('5')))
+    document.with(lines: [line])
+  end
+
+  def document_with_adjustment_tax_amount
+    tax = document.allowances.first.tax.with(tax_amount: BigDecimal('5'))
+    allowance = document.allowances.first.with(tax:)
+    document.with(allowances: [allowance])
+  end
+
+  def document_with_line_tax_amount
+    tax = document.lines.first.tax.with(tax_amount: BigDecimal('5'))
+    line = document.lines.first.with(tax:)
+    document.with(lines: [line])
+  end
+
+  def document_without_tax_breakdowns
+    document.with(tax_breakdowns: [])
   end
 
   def document_without_reference_values

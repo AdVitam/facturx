@@ -24,7 +24,8 @@ module Facturx
           private
 
           def line_tax(parent, value)
-            within_group('BG-30', value, element: 'ram:ApplicableTradeTax', parent:) do |node, item|
+            within_group('BG-30', value, element: 'ram:ApplicableTradeTax', parent:,
+                                         represented_attributes: [:type_code]) do |node, item|
               technical(node, 'ram:TypeCode', item.type_code, default: 'VAT')
               emit('BT-151', item.category_code, element: 'ram:CategoryCode', parent: node)
               emit('BT-152', item.rate, element: 'ram:RateApplicablePercent', parent: node)

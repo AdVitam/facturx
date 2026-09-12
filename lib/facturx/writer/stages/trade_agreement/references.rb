@@ -39,6 +39,8 @@ module Facturx
           end
 
           def typed_reference(parent, id, value, type_code)
+            report_unrepresentable_reference_attributes(id, value) if value
+
             unless value&.id
               observe?(id, nil)
               return

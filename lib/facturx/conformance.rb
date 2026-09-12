@@ -145,6 +145,16 @@ module Facturx
         )
       end
 
+      def unrepresentable_attribute(group, model:, attribute:, path: nil)
+        add(
+          :unrepresentable_attribute,
+          'Model attribute cannot be represented in this group',
+          group_id: group.id,
+          path: path || group.xpath,
+          details: { model:, attribute: }
+        )
+      end
+
       def report
         Report.new(profile:, issues: @issues)
       end
