@@ -26,8 +26,10 @@ module Facturx
         end
 
         def references(parent)
-          reference(parent, 'BT-16', document.despatch_advice_reference, 'ram:DespatchAdviceReferencedDocument')
-          reference(parent, 'BT-15', document.receiving_advice_reference, 'ram:ReceivingAdviceReferencedDocument')
+          emit_document_reference(parent, 'BT-16', document.despatch_advice_reference,
+                                  'ram:DespatchAdviceReferencedDocument')
+          emit_document_reference(parent, 'BT-15', document.receiving_advice_reference,
+                                  'ram:ReceivingAdviceReferencedDocument')
         end
 
         def delivery(parent, value)
@@ -69,13 +71,6 @@ module Facturx
           end
         end
 
-        def reference(parent, id, value, element)
-          if value
-            container(parent, element) { |node| emit(id, value.id, element: 'ram:IssuerAssignedID', parent: node) }
-          else
-            observe?(id, nil)
-          end
-        end
       end
     end
   end

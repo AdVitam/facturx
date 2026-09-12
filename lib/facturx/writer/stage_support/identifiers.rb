@@ -41,6 +41,17 @@ module Facturx
           end
         end
 
+        def emit_document_reference(parent, id, reference, element)
+          unless reference
+            observe?(id, nil)
+            return
+          end
+
+          container(parent, element) do |node|
+            emit(id, reference.id, element: 'ram:IssuerAssignedID', parent: node)
+          end
+        end
+
         def emit_identifier_scheme(node, identifier, value, options)
           scheme_id = options[:scheme_id]
           return unless scheme_id

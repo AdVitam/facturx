@@ -29,7 +29,7 @@ module Facturx
 
         def emit_tax(parent, tax, include_tax_point:)
           emit('BT-117', tax.tax_amount, element: 'ram:CalculatedAmount', parent:)
-          technical(parent, 'ram:TypeCode', tax.type_code || 'VAT')
+          technical(parent, 'ram:TypeCode', tax.type_code, default: 'VAT')
           emit('BT-120', tax.exemption_reason, element: 'ram:ExemptionReason', parent:)
           emit('BT-116', tax.basis_amount, element: 'ram:BasisAmount', parent:)
           emit('BT-118', tax.category_code, element: 'ram:CategoryCode', parent:)
@@ -45,12 +45,8 @@ module Facturx
         end
 
         def tax_point_date(parent)
-          value = document.vat_point_date
-          return observe?('BT-7', nil) unless value
-
-          container(parent, 'ram:TaxPointDate') do |node|
-            emit('BT-7', value, element: 'udt:DateString', parent: node, attributes: { 'format' => '102' })
-          end
+          emit_date(parent, 'BT-7', document.vat_point_date, wrapper: 'ram:TaxPointDate',
+                                                   value_element: 'udt:DateString')
         end
 
         def billing_period(parent)
@@ -92,7 +88,7 @@ module Facturx
           return missing_adjustment_tax?(category_id, rate_id) unless tax
 
           container(parent, 'ram:CategoryTradeTax') do |node|
-            technical(node, 'ram:TypeCode', tax.type_code || 'VAT')
+            technical(node, 'ram:TypeCode', tax.type_code, default: 'VAT')
             emit(category_id, tax.category_code, element: 'ram:CategoryCode', parent: node)
             emit(rate_id, tax.rate, element: 'ram:RateApplicablePercent', parent: node)
           end

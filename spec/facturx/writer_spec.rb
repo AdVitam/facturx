@@ -154,13 +154,19 @@ RSpec.describe Facturx::Writer do
           .to raise_conformance_error_for('BT-148')
       end
 
-      it 'uses the identifier as a project name when no name is supplied' do
+      it 'uses the identifier as a project name when the supplied name is blank' do
         id_only_document = document.with(
-          project_reference: Facturx::DocumentReference.new(id: 'PROJECT')
+          project_reference: Facturx::DocumentReference.new(id: 'PROJECT', name: ' ')
         )
 
         expect(Facturx::Reader.new.call(writer.call(document: id_only_document, profile:)).document.project_reference)
           .to have_attributes(id: 'PROJECT', name: 'PROJECT')
+      end
+
+      it 'uses VAT for blank tax type codes' do
+        expect(tax_type_codes(writer.call(document: blank_tax_type_document, profile:))).to match_array(
+          Array.new(4, 'VAT')
+        )
       end
     end
   end
@@ -228,5 +234,33 @@ RSpec.describe Facturx::Writer do
       gross_price: Facturx::Price.new(basis_quantity: document.lines.first.quantity)
     )
     document.with(lines: [line])
+  end
+
+  def blank_tax_type_document
+    document.with(
+      tax_breakdowns: blank_tax_types(document.tax_breakdowns),
+      allowances: blank_adjustment_tax_types(document.allowances),
+      charges: blank_adjustment_tax_types(document.charges),
+      lines: document.lines.map { |line| line.with(tax: blank_tax_type(line.tax)) }
+    )
+  end
+
+  def blank_adjustment_tax_types(adjustments)
+    adjustments.map { |adjustment| adjustment.with(tax: blank_tax_type(adjustment.tax)) }
+  end
+
+  def blank_tax_types(taxes)
+    taxes.map { |tax| blank_tax_type(tax) }
+  end
+
+  def blank_tax_type(tax)
+    tax.with(type_code: ' ')
+  end
+
+  def tax_type_codes(xml)
+    Nokogiri::XML(xml).xpath(
+      '//ram:ApplicableTradeTax/ram:TypeCode | //ram:CategoryTradeTax/ram:TypeCode',
+      Facturx::Xml::Namespaces::MAP
+    ).map(&:text)
   end
 end

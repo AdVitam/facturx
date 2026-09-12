@@ -24,15 +24,7 @@ module Facturx
         end
 
         def issue_date(parent)
-          value = document.issue_date
-          unless value
-            emit('BT-2', nil, element: 'udt:DateTimeString', parent: parent)
-            return
-          end
-
-          container(parent, 'ram:IssueDateTime') do |node|
-            emit('BT-2', value, element: 'udt:DateTimeString', parent: node, attributes: { 'format' => '102' })
-          end
+          emit_date(parent, 'BT-2', document.issue_date, wrapper: 'ram:IssueDateTime')
         end
       end
     end

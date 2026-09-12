@@ -14,18 +14,11 @@ module Facturx
           end
 
           def document_references(parent)
-            reference(parent, 'BT-14', document.sales_order_reference, 'ram:SellerOrderReferencedDocument')
-            reference(parent, 'BT-13', document.purchase_order_reference, 'ram:BuyerOrderReferencedDocument')
-            reference(parent, 'BT-12', document.contract_reference, 'ram:ContractReferencedDocument')
-          end
-
-          def reference(parent, id, value, element)
-            unless value
-              observe?(id, nil)
-              return
-            end
-
-            container(parent, element) { |node| emit(id, value.id, element: 'ram:IssuerAssignedID', parent: node) }
+            emit_document_reference(parent, 'BT-14', document.sales_order_reference,
+                                    'ram:SellerOrderReferencedDocument')
+            emit_document_reference(parent, 'BT-13', document.purchase_order_reference,
+                                    'ram:BuyerOrderReferencedDocument')
+            emit_document_reference(parent, 'BT-12', document.contract_reference, 'ram:ContractReferencedDocument')
           end
 
           def additional_references(parent)
@@ -92,7 +85,7 @@ module Facturx
 
             container(parent, 'ram:SpecifiedProcuringProject') do |node|
               emit('BT-11', value.id, element: 'ram:ID', parent: node)
-              technical(node, 'ram:Name', value.name || value.id)
+              technical(node, 'ram:Name', value.name, default: value.id)
             end
           end
         end
