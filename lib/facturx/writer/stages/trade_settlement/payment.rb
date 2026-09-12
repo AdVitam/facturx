@@ -68,7 +68,7 @@ module Facturx
         def credit_transfers(parents, values)
           transfers = Array(values)
           group = Terms.group('BG-17')
-          return unless tracker.observe_group(group, count: transfers.size, path: group.xpath)
+          return unless tracker.observe_group?(group, count: transfers.size, path: group.xpath)
 
           transfers.zip(parents).each { |item, parent| emit_credit_transfer(parent, item) }
         end

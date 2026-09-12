@@ -146,24 +146,18 @@ RSpec.describe Facturx::Writer do
       it 'reports a project reference without an identifier before XSD validation' do
         invalid_document = document.with(project_reference: Facturx::DocumentReference.new(name: 'Project'))
 
-        expect { writer.call(document: invalid_document, profile:) }
-          .to raise_error(Facturx::ConformanceError) do |error|
-            expect(error.details.fetch(:report).issues).to include(have_attributes(term_id: 'BT-11'))
-          end
+        expect { writer.call(document: invalid_document, profile:) }.to raise_conformance_error_for('BT-11')
       end
 
       it 'reports a gross price without an amount before XSD validation' do
-        line = document.lines.first.with(gross_price: Facturx::Price.new(basis_quantity: document.lines.first.quantity))
-        invalid_document = document.with(lines: [line])
-
-        expect { writer.call(document: invalid_document, profile:) }
-          .to raise_error(Facturx::ConformanceError) do |error|
-            expect(error.details.fetch(:report).issues).to include(have_attributes(term_id: 'BT-148'))
-          end
+        expect { writer.call(document: unrepresentable_gross_price_document, profile:) }
+          .to raise_conformance_error_for('BT-148')
       end
 
       it 'uses the identifier as a project name when no name is supplied' do
-        id_only_document = document.with(project_reference: Facturx::DocumentReference.new(id: 'PROJECT'))
+        id_only_document = document.with(
+          project_reference: Facturx::DocumentReference.new(id: 'PROJECT')
+        )
 
         expect(Facturx::Reader.new.call(writer.call(document: id_only_document, profile:)).document.project_reference)
           .to have_attributes(id: 'PROJECT', name: 'PROJECT')
@@ -221,5 +215,18 @@ RSpec.describe Facturx::Writer do
     it 'covers all 184 modeled EN16931 terms' do
       expect(described_class::MODELED_TERM_IDS.size).to eq(184)
     end
+  end
+
+  def raise_conformance_error_for(term_id)
+    raise_error(Facturx::ConformanceError) do |error|
+      expect(error.details.fetch(:report).issues).to include(have_attributes(term_id:))
+    end
+  end
+
+  def unrepresentable_gross_price_document
+    line = document.lines.first.with(
+      gross_price: Facturx::Price.new(basis_quantity: document.lines.first.quantity)
+    )
+    document.with(lines: [line])
   end
 end

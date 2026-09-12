@@ -36,13 +36,11 @@ RSpec.describe Facturx do
 
   it 'reports unrepresentable optional values through the public facade' do
     profile = Facturx::Profiles.fetch(:en16931)
-    document = WriterDocumentFactory.complete_document(profile)
-      .with(project_reference: Facturx::DocumentReference.new(name: 'Project'))
+    document = WriterDocumentFactory.complete_document(profile).with(
+      project_reference: Facturx::DocumentReference.new(name: 'Project')
+    )
 
-    expect { described_class.build_xml(document:, profile:) }
-      .to raise_error(Facturx::ConformanceError) do |error|
-        expect(error.details.fetch(:report).issues).to include(have_attributes(term_id: 'BT-11'))
-      end
+    expect { described_class.build_xml(document:, profile:) }.to raise_conformance_error_for('BT-11')
   end
 
   it 'delegates PDF generation through the public facade' do
@@ -66,5 +64,11 @@ RSpec.describe Facturx do
     skip 'CI-only dependency assertion' unless ENV['CI']
 
     expect(composer).to be_available
+  end
+
+  def raise_conformance_error_for(term_id)
+    raise_error(Facturx::ConformanceError) do |error|
+      expect(error.details.fetch(:report).issues).to include(have_attributes(term_id:))
+    end
   end
 end

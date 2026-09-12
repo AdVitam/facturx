@@ -9,7 +9,7 @@ module Facturx
         def within_group(id, value, element:, parent:)
           group = Terms.group(id)
           values = present_values(value)
-          accepted = tracker.observe_group(group, count: values.size, path: group.xpath)
+          accepted = tracker.observe_group?(group, count: values.size, path: group.xpath)
           return unless accepted
 
           values.each do |item|

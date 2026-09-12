@@ -133,13 +133,14 @@ module Facturx
         check_guideline(document.guideline_urn, path:)
       end
 
-      def observe_group(group, count:, path: nil, group_present: true)
+      def observe_group?(group, count:, path: nil, group_present: true)
         validate_count!(count)
         return false unless group_present
 
         definition_observed?(group, count, path)
       end
-      def observe_term(term, value: UNSET, values: UNSET, path: nil, group_present: true)
+
+      def observe_term?(term, value: UNSET, values: UNSET, path: nil, group_present: true)
         return false unless group_present
 
         definition_observed?(term, value_count(observed_value(value, values)), path)

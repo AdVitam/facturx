@@ -54,35 +54,35 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
     end
 
     it 'aggregates missing and forbidden terms' do
-      results = [tracker.observe_term(required_term, value: nil),
-                 tracker.observe_term(optional_term, value: nil),
-                 tracker.observe_term(forbidden_term, value: 'forbidden')]
+      results = [tracker.observe_term?(required_term, value: nil),
+                 tracker.observe_term?(optional_term, value: nil),
+                 tracker.observe_term?(forbidden_term, value: 'forbidden')]
 
       expect([*results, tracker.report.issues.map(&:code)])
         .to eq([false, false, false, %i[missing_required_term forbidden_term]])
     end
 
     it 'reports scalar cardinality while keeping present values emit-able' do
-      results = [tracker.observe_term(required_term, value: %w[first second]),
-                 tracker.observe_group(required_group, count: 2)]
+      results = [tracker.observe_term?(required_term, value: %w[first second]),
+                 tracker.observe_group?(required_group, count: 2)]
 
       expect([*results, tracker.report.issues.map(&:code)])
         .to eq([true, true, %i[invalid_cardinality invalid_cardinality]])
     end
 
     it 'aggregates missing and forbidden groups' do
-      results = [tracker.observe_group(required_group, count: 0),
-                 tracker.observe_group(optional_group, count: 0),
-                 tracker.observe_group(forbidden_group, count: 1)]
+      results = [tracker.observe_group?(required_group, count: 0),
+                 tracker.observe_group?(optional_group, count: 0),
+                 tracker.observe_group?(forbidden_group, count: 1)]
 
       expect([*results, tracker.report.issues.map(&:code)])
         .to eq([false, false, false, %i[missing_required_group forbidden_group]])
     end
 
     it 'does not cascade into children of missing or forbidden groups' do
-      results = [tracker.observe_group(required_group, count: 0),
-                 tracker.observe_group(forbidden_group, count: 1)]
-      tracker.observe_term(required_term, value: nil, group_present: false)
+      results = [tracker.observe_group?(required_group, count: 0),
+                 tracker.observe_group?(forbidden_group, count: 1)]
+      tracker.observe_term?(required_term, value: nil, group_present: false)
 
       expect([*results, tracker.report.issues.map(&:code)])
         .to eq([false, false, %i[missing_required_group forbidden_group]])
@@ -95,7 +95,6 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
         code: :invalid_value, term_id: 'BT-1', group_id: 'BG-0', path: '/invoice/id'
       )
     end
-
   end
 
   def term(id, cardinality)

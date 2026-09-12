@@ -9,7 +9,7 @@ module Facturx
         def emit(id, value, **options)
           term = Terms.fetch(id)
           values = present_values(value)
-          accepted = tracker.observe_term(
+          accepted = tracker.observe_term?(
             term,
             values:,
             path: term.xpath,
@@ -23,7 +23,7 @@ module Facturx
         def emit_attribute(id, value, **options)
           term = Terms.fetch(id)
           values = present_values(value)
-          accepted = tracker.observe_term(
+          accepted = tracker.observe_term?(
             term,
             values:,
             path: term.xpath,
@@ -36,7 +36,7 @@ module Facturx
 
         def observe(id, value, group_present: true)
           term = Terms.fetch(id)
-          tracker.observe_term(term, values: present_values(value), path: term.xpath, group_present:)
+          tracker.observe_term?(term, values: present_values(value), path: term.xpath, group_present:)
         end
 
         def unrepresentable(id, message)
