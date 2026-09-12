@@ -44,7 +44,7 @@ module Facturx
             each_group(group_id, values, element: 'ram:SpecifiedTradeAllowanceCharge', parent:,
                                          represented_attributes: [:indicator]) do |node, item|
               report_unrepresentable_attributes(group_id, item.tax) if item.tax
-              adjustment_indicator(node, item, group_id, indicator)
+              adjustment_indicator(node, group_id, indicator)
               emit_adjustment_fields(node, item, ids)
             end
           end
@@ -57,8 +57,7 @@ module Facturx
             emit(ids[4], item.reason, element: 'ram:Reason', parent:)
           end
 
-          def adjustment_indicator(parent, item, group_id, fallback)
-            value = item.indicator.nil? ? fallback : item.indicator
+          def adjustment_indicator(parent, group_id, value)
             within_group("#{group_id}-0", value, element: 'ram:ChargeIndicator', parent:) do |node, indicator|
               within_group("#{group_id}-1", indicator, element: 'udt:Indicator', parent: node) do |leaf, raw|
                 leaf.content = raw ? 'true' : 'false'

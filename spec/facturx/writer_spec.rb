@@ -320,6 +320,19 @@ RSpec.describe Facturx::Writer do
         expect { writer.call(document: document_without_tax_breakdowns, profile:) }
           .to raise_unrepresentable_attribute('BG-23', :document, :vat_point_date_code)
       end
+
+      it 'reports a VAT point date code conflicting with a tax breakdown' do
+        expect { writer.call(document: document_with_conflicting_vat_point_code, profile:) }
+          .to raise_unrepresentable_attribute('BG-23', :document, :vat_point_date_code)
+      end
+
+      it 'classifies a header charge moved to allowances as an allowance' do
+        expect(header_allowance_after_round_trip).to have_attributes(indicator: false)
+      end
+
+      it 'classifies a line charge moved to allowances as an allowance' do
+        expect(line_allowance_after_round_trip).to have_attributes(indicator: false)
+      end
     end
   end
 
@@ -520,6 +533,24 @@ RSpec.describe Facturx::Writer do
 
   def document_without_tax_breakdowns
     document.with(tax_breakdowns: [])
+  end
+
+  def document_with_conflicting_vat_point_code
+    tax = document.tax_breakdowns.first.with(due_date_type_code: 'XX')
+    document.with(tax_breakdowns: [tax])
+  end
+
+  def header_allowance_after_round_trip
+    charge = document.charges.first
+    adjusted = document.with(allowances: [charge], charges: [])
+    Facturx::Reader.new.call(writer.call(document: adjusted, profile:)).document.allowances.first
+  end
+
+  def line_allowance_after_round_trip
+    charge = document.lines.first.charges.first
+    line = document.lines.first.with(allowances: [charge], charges: [])
+    adjusted = document.with(lines: [line])
+    Facturx::Reader.new.call(writer.call(document: adjusted, profile:)).document.lines.first.allowances.first
   end
 
   def document_without_reference_values

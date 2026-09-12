@@ -44,8 +44,11 @@ module Facturx
         end
 
         def tax_due_date_type(parent, tax)
-          value = tax.due_date_type_code || document.vat_point_date_code
-          emit('BT-8', value, element: 'ram:DueDateTypeCode', parent:)
+          document_code = document.vat_point_date_code
+          if tax.due_date_type_code && document_code && tax.due_date_type_code != document_code
+            report_unrepresentable_attribute('BG-23', model: :document, attribute: :vat_point_date_code)
+          end
+          emit('BT-8', tax.due_date_type_code || document_code, element: 'ram:DueDateTypeCode', parent:)
         end
 
         def tax_point_date(parent)
@@ -77,7 +80,7 @@ module Facturx
         end
 
         def emit_adjustment(parent, adjustment, group_id, indicator, ids)
-          adjustment_indicator(parent, adjustment, group_id, indicator)
+          adjustment_indicator(parent, group_id, indicator)
           emit_adjustment_values(parent, adjustment, ids)
           adjustment_tax(parent, adjustment.tax, group_id, ids[5], ids[6])
         end
@@ -88,8 +91,7 @@ module Facturx
           end
         end
 
-        def adjustment_indicator(parent, item, group_id, fallback)
-          value = item.indicator.nil? ? fallback : item.indicator
+        def adjustment_indicator(parent, group_id, value)
           within_group("#{group_id}-0", value, element: 'ram:ChargeIndicator', parent:) do |node, indicator|
             within_group("#{group_id}-1", indicator, element: 'udt:Indicator', parent: node) do |leaf, raw|
               leaf.content = raw ? 'true' : 'false'
