@@ -59,7 +59,7 @@ module Facturx
 
           def invoiced_object_reference(parent)
             item = document.invoiced_object_identifier
-            return observe_missing_invoiced_object? unless item
+            return observe_missing_invoiced_object unless item
 
             container(parent, 'ram:AdditionalReferencedDocument') do |node|
               emit('BT-18', item.value, element: 'ram:IssuerAssignedID', parent: node)
@@ -68,7 +68,7 @@ module Facturx
             end
           end
 
-          def observe_missing_invoiced_object?
+          def observe_missing_invoiced_object
             observe?('BT-18', nil)
             observe?('BT-18-1', nil, group_present: false)
             nil
