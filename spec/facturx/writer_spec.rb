@@ -208,6 +208,11 @@ RSpec.describe Facturx::Writer do
           .to raise_conformance_error_for('BT-14', code: :invalid_value)
       end
 
+      it 'reports an identifier on a line buyer order reference' do
+        expect { writer.call(document: document_with_line_buyer_order_identifier, profile:) }
+          .to raise_conformance_error_for('BT-132', code: :invalid_value)
+      end
+
       it 'reports unrepresentable project reference attributes' do
         expect { writer.call(document: document_with_project_reference_attributes, profile:) }
           .to raise_conformance_error_for('BT-11', code: :invalid_value)
@@ -354,6 +359,12 @@ RSpec.describe Facturx::Writer do
 
   def document_with_reference_name
     document.with(sales_order_reference: document.sales_order_reference.with(name: 'Order'))
+  end
+
+  def document_with_line_buyer_order_identifier
+    reference = document.lines.first.buyer_order_reference.with(id: 'ORDER')
+    line = document.lines.first.with(buyer_order_reference: reference)
+    document.with(lines: [line])
   end
 
   def document_with_project_reference_attributes

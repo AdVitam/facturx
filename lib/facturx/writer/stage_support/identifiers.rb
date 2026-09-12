@@ -47,7 +47,8 @@ module Facturx
             return
           end
 
-          report_unrepresentable_reference_attributes(id, reference, represented_attributes:)
+          represented = [:id, *represented_attributes]
+          report_unrepresentable_reference_attributes(id, reference, represented_attributes: represented)
 
           container(parent, element) do |node|
             emit(id, reference.id, element: 'ram:IssuerAssignedID', parent: node)
@@ -55,7 +56,7 @@ module Facturx
         end
 
         def report_unrepresentable_reference_attributes(id, reference, represented_attributes: [])
-          %i[line_id name issue_date].each do |attribute|
+          %i[id line_id name issue_date].each do |attribute|
             next unless reference.public_send(attribute) && !represented_attributes.include?(attribute)
 
             unrepresentable(id, "Document reference #{attribute} cannot be represented")

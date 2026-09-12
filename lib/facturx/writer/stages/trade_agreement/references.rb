@@ -39,7 +39,7 @@ module Facturx
           end
 
           def typed_reference(parent, id, value, type_code)
-            report_unrepresentable_reference_attributes(id, value) if value
+            report_unrepresentable_reference_attributes(id, value, represented_attributes: [:id]) if value
 
             unless value&.id
               observe?(id, nil)
@@ -92,7 +92,7 @@ module Facturx
           end
 
           def representable_project_reference?(value)
-            report_unrepresentable_reference_attributes('BT-11', value, represented_attributes: [:name])
+            report_unrepresentable_reference_attributes('BT-11', value, represented_attributes: %i[id name])
             return true if value.id
 
             unrepresentable('BT-11', 'Project reference requires an identifier')

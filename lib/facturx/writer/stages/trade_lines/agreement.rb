@@ -28,6 +28,8 @@ module Facturx
           def buyer_order_reference(parent, value)
             return observe?('BT-132', nil) unless value
 
+            report_unrepresentable_reference_attributes('BT-132', value, represented_attributes: [:line_id])
+
             container(parent, 'ram:BuyerOrderReferencedDocument') do |node|
               emit('BT-132', value.line_id, element: 'ram:LineID', parent: node)
             end
