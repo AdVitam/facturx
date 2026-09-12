@@ -5,9 +5,6 @@ require_relative 'model/immutable'
 
 module Facturx
   module Conformance
-    UNSET = Object.new.freeze
-    private_constant :UNSET
-
     Issue = Data.define(:code, :message, :term_id, :group_id, :path, :details) do
       include Model::ValidatedWith
 
@@ -99,11 +96,6 @@ module Facturx
 
       def repeated?(cardinality) = cardinality.end_with?('n')
 
-      def validate_count!(count)
-        return if count.is_a?(Integer) && !count.negative?
-
-        raise ArgumentError, 'count must be a non-negative Integer'
-      end
     end
     private_constant :Tracking
 
@@ -133,17 +125,12 @@ module Facturx
         check_guideline(document.guideline_urn, path:)
       end
 
-      def observe_group?(group, count:, path: nil, group_present: true)
-        validate_count!(count)
-        return false unless group_present
-
+      def observe_group?(group, count:, path: nil)
         definition_observed?(group, count, path)
       end
 
-      def observe_term?(term, value: UNSET, values: UNSET, path: nil, group_present: true)
-        return false unless group_present
-
-        definition_observed?(term, value_count(observed_value(value, values)), path)
+      def observe_term?(term, values:, path: nil)
+        definition_observed?(term, values.size, path)
       end
 
       def invalid_term(term, error:, path: nil)
@@ -165,20 +152,6 @@ module Facturx
 
       private
 
-      def observed_value(value, values)
-        both_provided = !value.equal?(UNSET) && !values.equal?(UNSET)
-        raise ArgumentError, 'provide either value: or values:, not both' if both_provided
-        raise ArgumentError, 'provide value: or values:' if value.equal?(UNSET) && values.equal?(UNSET)
-
-        values.equal?(UNSET) ? value : values
-      end
-
-      def value_count(value)
-        return value.size if value.is_a?(Array)
-        return 0 if value.nil?
-
-        1
-      end
     end
   end
 end

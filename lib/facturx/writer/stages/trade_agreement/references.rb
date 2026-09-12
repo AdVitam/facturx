@@ -39,7 +39,7 @@ module Facturx
           end
 
           def typed_reference(parent, id, value, type_code)
-            unless value
+            unless value&.id
               observe?(id, nil)
               return
             end
@@ -52,7 +52,7 @@ module Facturx
 
           def invoiced_object_reference(parent)
             item = document.invoiced_object_identifier
-            return observe_missing_invoiced_object unless item
+            return observe_missing_invoiced_object unless item&.value
 
             container(parent, 'ram:AdditionalReferencedDocument') do |node|
               emit('BT-18', item.value, element: 'ram:IssuerAssignedID', parent: node)

@@ -9,11 +9,12 @@ module Facturx
         def emit(id, value, **options)
           term = Terms.fetch(id)
           values = present_values(value)
+          return [] unless options.fetch(:group_present, true)
+
           accepted = tracker.observe_term?(
             term,
             values:,
-            path: term.xpath,
-            group_present: options.fetch(:group_present, true)
+            path: term.xpath
           )
           return [] unless accepted
 
@@ -23,11 +24,13 @@ module Facturx
         def emit_attribute(id, value, **options)
           term = Terms.fetch(id)
           values = present_values(value)
+          group_present = options.fetch(:group_present, !options.fetch(:node).nil?)
+          return unless group_present
+
           accepted = tracker.observe_term?(
             term,
             values:,
-            path: term.xpath,
-            group_present: options.fetch(:group_present, !options.fetch(:node).nil?)
+            path: term.xpath
           )
           return unless accepted
 
@@ -35,8 +38,10 @@ module Facturx
         end
 
         def observe?(id, value, group_present: true)
+          return false unless group_present
+
           term = Terms.fetch(id)
-          tracker.observe_term?(term, values: present_values(value), path: term.xpath, group_present:)
+          tracker.observe_term?(term, values: present_values(value), path: term.xpath)
         end
 
         def unrepresentable(id, message)

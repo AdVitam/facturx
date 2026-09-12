@@ -157,11 +157,13 @@ RSpec.describe Facturx::Reader do
     expect(readings.map { |reading| tax_diagnostic_counts(reading) }).to eq([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
   end
 
-  it 'reports duplicate payment instructions once through BG-16' do
+  it 'reports non-projected duplicate payment instructions without mapping the second type code' do
     diagnostics = reader.call(xml_with_two_payment_instructions).diagnostics
 
-    expect(diagnostics.select { |diagnostic| diagnostic.code == :multiple_values && diagnostic.term_id == 'BG-16' })
-      .to have_attributes(size: 1)
+    expect([
+             diagnostics.count { |diagnostic| diagnostic.code == :multiple_values && diagnostic.term_id == 'BG-16' },
+             diagnostics.any? { |diagnostic| diagnostic.code == :unmapped_element && diagnostic.path.end_with?('/ram:TypeCode') }
+           ]).to eq([1, true])
   end
 
   it 'reads a BASIC credit transfer without the EN16931-only provider identifier' do

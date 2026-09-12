@@ -9,7 +9,7 @@ module Facturx
         nodes = group_nodes('BG-16', collapse_if: method(:projected_credit_transfers?))
         base = group_xpath('BG-16')
         attributes = settlement_payment_attributes(nodes.first, base)
-        attributes.merge!(payment_means_attributes(nodes, base)) if nodes.any?
+        attributes.merge!(payment_means_attributes(nodes, base, projected: projected_credit_transfers?(nodes))) if nodes.any?
         return if attributes.empty?
 
         PaymentInstructions.new(**attributes)
@@ -22,12 +22,13 @@ module Facturx
         attributes.compact
       end
 
-      def payment_means_attributes(nodes, base)
+      def payment_means_attributes(nodes, base, projected:)
         attributes = scalar_attributes(:payment_instructions, 'BG-16', context: nodes.first, base_xpath: base)
-        mark_repeated_payment_attributes(nodes.drop(1), base)
+        payment_nodes = projected ? nodes : [nodes.first]
+        mark_repeated_payment_attributes(payment_nodes.drop(1), base) if projected
         attributes.merge(
-          credit_transfers: credit_transfers(nodes, base),
-          payment_card: nodes.filter_map { |node| payment_card(node, base) }.first
+          credit_transfers: credit_transfers(payment_nodes, base),
+          payment_card: payment_nodes.filter_map { |node| payment_card(node, base) }.first
         )
       end
 

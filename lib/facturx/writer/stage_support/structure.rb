@@ -23,12 +23,12 @@ module Facturx
           within_group(id, Array(values), element:, parent:, &)
         end
 
-        def technical(parent, element, value, default: nil, attributes: {})
+        def technical(parent, element, value, default: nil)
           text = value.to_s
           text = default.to_s if text.strip.empty?
           return if text.strip.empty?
 
-          context.element(parent, element, text:, attributes:)
+          context.element(parent, element, text:)
         end
 
         def container(parent, element)

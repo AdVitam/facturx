@@ -168,6 +168,10 @@ RSpec.describe Facturx::Writer do
           Array.new(4, 'VAT')
         )
       end
+
+      it 'omits references without their identifiers' do
+        expect(orphan_references(writer.call(document: document_without_reference_values, profile:))).to be_empty
+      end
     end
   end
 
@@ -245,6 +249,15 @@ RSpec.describe Facturx::Writer do
     )
   end
 
+  def document_without_reference_values
+    line = document.lines.first.with(invoiced_object_identifier: Facturx::Identifier.new(scheme_id: 'OBJ'))
+    document.with(
+      tender_or_lot_reference: Facturx::DocumentReference.new,
+      invoiced_object_identifier: Facturx::Identifier.new(scheme_id: 'OBJ'),
+      lines: [line]
+    )
+  end
+
   def blank_line_tax_types
     document.lines.map { |line| line.with(tax: blank_tax_type(line.tax)) }
   end
@@ -266,5 +279,12 @@ RSpec.describe Facturx::Writer do
       '//ram:ApplicableTradeTax/ram:TypeCode | //ram:CategoryTradeTax/ram:TypeCode',
       Facturx::Xml::Namespaces::MAP
     ).map(&:text)
+  end
+
+  def orphan_references(xml)
+    Nokogiri::XML(xml).xpath(
+      '//ram:AdditionalReferencedDocument[ram:TypeCode="50" or ram:TypeCode="130"]',
+      Facturx::Xml::Namespaces::MAP
+    )
   end
 end
