@@ -41,7 +41,7 @@ module Facturx
                 emit('BT-127', line.note, element: 'ram:Content', parent: note)
               end
             else
-              observe('BT-127', nil)
+              observe?('BT-127', nil)
             end
           end
         end

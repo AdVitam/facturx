@@ -21,7 +21,7 @@ module Facturx
 
           def reference(parent, id, value, element)
             unless value
-              observe(id, nil)
+              observe?(id, nil)
               return
             end
 
@@ -47,7 +47,7 @@ module Facturx
 
           def typed_reference(parent, id, value, type_code)
             unless value
-              observe(id, nil)
+              observe?(id, nil)
               return
             end
 
@@ -69,8 +69,8 @@ module Facturx
           end
 
           def observe_missing_invoiced_object
-            observe('BT-18', nil)
-            observe('BT-18-1', nil, group_present: false)
+            observe?('BT-18', nil)
+            observe?('BT-18-1', nil, group_present: false)
             nil
           end
 
@@ -84,7 +84,7 @@ module Facturx
           def project(parent)
             value = document.project_reference
             unless value && (value.id || value.name)
-              observe('BT-11', nil)
+              observe?('BT-11', nil)
               return
             end
 

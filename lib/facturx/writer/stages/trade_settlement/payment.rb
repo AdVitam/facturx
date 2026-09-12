@@ -58,7 +58,7 @@ module Facturx
 
         def debtor_account(parent, value)
           identifier = value&.debtor_account_identifier
-          return observe('BT-91', nil) unless identifier
+          return observe?('BT-91', nil) unless identifier
 
           container(parent, 'ram:PayerPartyDebtorFinancialAccount') do |node|
             emit('BT-91', identifier.value, element: 'ram:IBANID', parent: node)
@@ -82,7 +82,7 @@ module Facturx
         end
 
         def emit_provider(parent, identifier)
-          return observe('BT-86', nil) unless identifier
+          return observe?('BT-86', nil) unless identifier
 
           container(parent, 'ram:PayeeSpecifiedCreditorFinancialInstitution') do |node|
             emit('BT-86', identifier.value, element: 'ram:BICID', parent: node)

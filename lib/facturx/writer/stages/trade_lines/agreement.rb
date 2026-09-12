@@ -26,7 +26,7 @@ module Facturx
           private
 
           def buyer_order_reference(parent, value)
-            return observe('BT-132', nil) unless value
+            return observe?('BT-132', nil) unless value
 
             container(parent, 'ram:BuyerOrderReferencedDocument') do |node|
               emit('BT-132', value.line_id, element: 'ram:LineID', parent: node)
@@ -51,24 +51,24 @@ module Facturx
           end
 
           def observe_missing_price(config, kind:)
-            config.fetch(:ids).each { |id| observe(id, nil) }
+            config.fetch(:ids).each { |id| observe?(id, nil) }
             return unless kind == :gross
 
-            observe('BT-147-01', nil)
-            observe('BT-147', nil)
+            observe?('BT-147-01', nil)
+            observe?('BT-147', nil)
           end
 
           def gross_discount(parent, value)
             return observe_missing_discount unless value
-            return unless observe('BT-147-01', false) && observe('BT-147-02', false)
+            return unless observe?('BT-147-01', false) && observe?('BT-147-02', false)
 
             emit_discount(parent, value)
           end
 
           def observe_missing_discount
-            observe('BT-147-01', nil)
-            observe('BT-147-02', nil, group_present: false)
-            observe('BT-147', nil)
+            observe?('BT-147-01', nil)
+            observe?('BT-147-02', nil, group_present: false)
+            observe?('BT-147', nil)
           end
 
           def emit_discount(parent, value)

@@ -46,7 +46,7 @@ module Facturx
 
         def tax_point_date(parent)
           value = document.vat_point_date
-          return observe('BT-7', nil) unless value
+          return observe?('BT-7', nil) unless value
 
           container(parent, 'ram:TaxPointDate') do |node|
             emit('BT-7', value, element: 'udt:DateString', parent: node, attributes: { 'format' => '102' })
@@ -99,8 +99,8 @@ module Facturx
         end
 
         def missing_adjustment_tax(category_id, rate_id)
-          observe(category_id, nil)
-          observe(rate_id, nil)
+          observe?(category_id, nil)
+          observe?(rate_id, nil)
         end
       end
     end

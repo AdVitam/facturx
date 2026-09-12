@@ -24,8 +24,8 @@ module Facturx
         end
 
         def missing_payee_registration
-          observe('BT-61', nil)
-          observe('BT-61-1', nil, group_present: false)
+          observe?('BT-61', nil)
+          observe?('BT-61-1', nil, group_present: false)
         end
       end
     end

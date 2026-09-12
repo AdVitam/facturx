@@ -34,7 +34,7 @@ module Facturx
           emit_attribute_value(term, values, options)
         end
 
-        def observe(id, value, group_present: true)
+        def observe?(id, value, group_present: true)
           term = Terms.fetch(id)
           tracker.observe_term?(term, values: present_values(value), path: term.xpath, group_present:)
         end

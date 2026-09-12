@@ -37,7 +37,7 @@ module Facturx
 
         def delivery_date(parent, value)
           unless value
-            observe('BT-72', nil)
+            observe?('BT-72', nil)
             return
           end
 
@@ -59,13 +59,13 @@ module Facturx
 
         def delivery_identifier(parent, value)
           if value&.scheme_id
-            return unless observe('BT-71', value.value)
+            return unless observe?('BT-71', value.value)
 
             node = technical(parent, 'ram:GlobalID', format_identifier_value('BT-71', value.value))
             emit_attribute('BT-71-1', value.scheme_id, node:, attribute: 'schemeID', group_present: true)
           else
             emit('BT-71', value&.value, element: 'ram:ID', parent:)
-            observe('BT-71-1', nil, group_present: false)
+            observe?('BT-71-1', nil, group_present: false)
           end
         end
 
@@ -73,7 +73,7 @@ module Facturx
           if value
             container(parent, element) { |node| emit(id, value.id, element: 'ram:IssuerAssignedID', parent: node) }
           else
-            observe(id, nil)
+            observe?(id, nil)
           end
         end
       end

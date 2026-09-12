@@ -76,9 +76,9 @@ module Facturx
           end
 
           def observe_missing_legal_organization(value_id, scheme_id, trading_name_id)
-            observe(value_id, nil)
-            observe(scheme_id, nil, group_present: false)
-            observe(trading_name_id, nil)
+            observe?(value_id, nil)
+            observe?(scheme_id, nil, group_present: false)
+            observe?(trading_name_id, nil)
             nil
           end
 
@@ -91,8 +91,8 @@ module Facturx
           end
 
           def observe_missing_identifier(value_id, scheme_id)
-            observe(value_id, nil)
-            observe(scheme_id, nil, group_present: false)
+            observe?(value_id, nil)
+            observe?(scheme_id, nil, group_present: false)
             nil
           end
         end

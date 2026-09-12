@@ -80,12 +80,12 @@ module Facturx
           end
 
           def observe_missing_invoiced_object
-            observe('BT-128', nil)
-            observe('BT-128-1', nil, group_present: false)
+            observe?('BT-128', nil)
+            observe?('BT-128-1', nil, group_present: false)
           end
 
           def accounting_reference(parent, id, value)
-            return observe(id, nil) unless value
+            return observe?(id, nil) unless value
 
             container(parent, 'ram:ReceivableSpecifiedTradeAccountingAccount') do |node|
               emit(id, value, element: 'ram:ID', parent: node)

@@ -18,9 +18,9 @@ module Facturx
         end
 
         def missing_payment_terms
-          observe('BT-20', nil)
-          observe('BT-9', nil)
-          observe('BT-89', nil)
+          observe?('BT-20', nil)
+          observe?('BT-9', nil)
+          observe?('BT-89', nil)
         end
 
         def totals(parent)
@@ -68,7 +68,7 @@ module Facturx
 
         def accounting_reference(parent)
           value = document.buyer_accounting_reference
-          return observe('BT-19', nil) unless value
+          return observe?('BT-19', nil) unless value
 
           container(parent, 'ram:ReceivableSpecifiedTradeAccountingAccount') do |node|
             emit('BT-19', value, element: 'ram:ID', parent: node)

@@ -38,7 +38,7 @@ module Facturx
 
           def classifications(parent, values)
             items = Array(values)
-            return unless observe('BT-158', items.map(&:code))
+            return unless observe?('BT-158', items.map(&:code))
 
             items.each { |item| classification(parent, item) }
           end
@@ -53,7 +53,7 @@ module Facturx
           end
 
           def origin_country(parent, value)
-            return observe('BT-159', nil) unless value
+            return observe?('BT-159', nil) unless value
 
             container(parent, 'ram:OriginTradeCountry') do |node|
               emit('BT-159', value, element: 'ram:ID', parent: node)

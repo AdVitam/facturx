@@ -16,7 +16,7 @@ module Facturx
 
         def emit_party_identifiers(parent, identifiers, value_id, scheme_id)
           items = Array(identifiers)
-          return unless observe(value_id, items.map(&:value))
+          return unless observe?(value_id, items.map(&:value))
 
           local, global = items.partition { |item| item.scheme_id.nil? }
           emit_local_identifiers(parent, local, value_id)
@@ -32,7 +32,7 @@ module Facturx
         def emit_tax_registration(parent, id, identifier, scheme)
           value = identifier&.value
           unless value
-            observe(id, nil)
+            observe?(id, nil)
             return
           end
 
@@ -65,7 +65,7 @@ module Facturx
             technical(parent, 'ram:GlobalID', format_identifier_value(value_id, item.value))
           end
           schemes = identifiers.map(&:scheme_id)
-          return unless observe(scheme_id, schemes, group_present: !identifiers.empty?)
+          return unless observe?(scheme_id, schemes, group_present: !identifiers.empty?)
 
           nodes.zip(schemes).each { |node, scheme| assign_scheme(node, scheme_id, scheme) }
         end
