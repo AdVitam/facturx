@@ -120,6 +120,34 @@ RSpec.describe Facturx::Writer do
       end
     end
 
+    context 'with global seller identifiers' do
+      let(:profile) { Facturx::Profiles.fetch(:en16931) }
+      let(:identifiers) do
+        [
+          Facturx::Identifier.new(value: 'SELLER-ONE', scheme_id: '0088'),
+          Facturx::Identifier.new(value: 'SELLER-TWO', scheme_id: '0060')
+        ]
+      end
+      let(:document) do
+        original = WriterDocumentFactory.complete_document(profile)
+        original.with(seller: original.seller.with(identifiers:))
+      end
+
+      it 'keeps each global identifier scheme on round trip' do
+        reading = Facturx::Reader.new.call(writer.call(document:, profile:))
+
+        expect(reading.document.seller.identifiers).to eq(identifiers)
+      end
+
+      it 'reports a scheme-only global identifier' do
+        identifier = Facturx::Identifier.new(scheme_id: '0088')
+        invalid = document.with(seller: document.seller.with(identifiers: [identifier]))
+
+        expect { writer.call(document: invalid, profile:) }
+          .to raise_conformance_error_for('BT-29', code: :invalid_value)
+      end
+    end
+
     context 'with empty optional objects' do
       let(:profile) { Facturx::Profiles.fetch(:en16931) }
       let(:document) do

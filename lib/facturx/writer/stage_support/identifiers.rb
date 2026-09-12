@@ -16,9 +16,12 @@ module Facturx
 
         def emit_party_identifiers(parent, identifiers, value_id, scheme_id)
           items = Array(identifiers)
+          local, global = items.partition { |item| item.scheme_id.nil? }
+          missing, global = global.partition { |item| item.value.to_s.strip.empty? }
+          emit_global_identifiers(parent, missing, value_id, scheme_id)
+
           return unless observe?(value_id, items.map(&:value))
 
-          local, global = items.partition { |item| item.scheme_id.nil? }
           emit_local_identifiers(parent, local, value_id)
           emit_global_identifiers(parent, global, value_id, scheme_id)
         end
@@ -83,18 +86,15 @@ module Facturx
         end
 
         def emit_global_identifiers(parent, identifiers, value_id, scheme_id)
-          nodes = identifiers.map do |item|
-            technical(parent, 'ram:GlobalID', format_identifier_value(value_id, item.value))
+          identifiers.each do |item|
+            if item.value.to_s.strip.empty?
+              unrepresentable(value_id, 'Global identifier requires a value')
+              next
+            end
+
+            node = technical(parent, 'ram:GlobalID', format_identifier_value(value_id, item.value))
+            emit_attribute(scheme_id, item.scheme_id, node:, attribute: 'schemeID', group_present: true)
           end
-          schemes = identifiers.map(&:scheme_id)
-          return unless observe?(scheme_id, schemes, group_present: !identifiers.empty?)
-
-          nodes.zip(schemes).each { |node, scheme| assign_scheme(node, scheme_id, scheme) }
-        end
-
-        def assign_scheme(node, scheme_id, scheme)
-          formatted = format_identifier_value(scheme_id, scheme)
-          node['schemeID'] = formatted if node && formatted
         end
       end
     end
