@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Build immutable invoice documents through a typed nested DSL.
+- Validate document cardinalities and profile compatibility with aggregated conformance reports.
+- Generate profile-specific Factur-X XML and attach it to existing PDFs.
+- Verify term membership and cardinalities against pinned official workbooks during maintenance checks.
+
 ## [0.2.0] - 2026-09-12
 
 ### Added

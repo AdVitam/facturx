@@ -34,7 +34,7 @@ module Facturx
       def line_reference_attributes(node, base)
         {
           buyer_order_reference: reference('BT-132', context: node, base_xpath: base, field: :line_id),
-          invoiced_object_identifier: identifier('BT-128', 'BT-128-1', context: node, base_xpath: base)
+          invoiced_object_identifier: line_invoiced_object_identifier(node, base)
         }
       end
 

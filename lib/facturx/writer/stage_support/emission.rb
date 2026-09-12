@@ -1,0 +1,75 @@
+# frozen_string_literal: true
+
+module Facturx
+  class Writer
+    module StageSupport
+      module Emission
+        private
+
+        def emit(id, value, **options)
+          term = Terms.fetch(id)
+          values = present_values(value)
+          accepted = tracker.observe_term(
+            term,
+            values:,
+            path: term.xpath,
+            group_present: options.fetch(:group_present, true)
+          )
+          return [] unless accepted
+
+          values.filter_map { |item| emit_value(term, item, options) }
+        end
+
+        def emit_attribute(id, value, **options)
+          term = Terms.fetch(id)
+          values = present_values(value)
+          accepted = tracker.observe_term(
+            term,
+            values:,
+            path: term.xpath,
+            group_present: options.fetch(:group_present, !options.fetch(:node).nil?)
+          )
+          return unless accepted
+
+          emit_attribute_value(term, values, options)
+        end
+
+        def observe(id, value, group_present: true)
+          term = Terms.fetch(id)
+          tracker.observe_term(term, values: present_values(value), path: term.xpath, group_present:)
+        end
+
+        def present_values(value)
+          (value.is_a?(Array) ? value : [value]).compact
+        end
+
+        def format(value, term)
+          Format.call(value, term:)
+        rescue FormattingError => e
+          tracker.invalid_term(term, error: e, path: term.xpath)
+          nil
+        end
+
+        def emit_value(term, value, options)
+          formatted = format(value, term)
+          return unless formatted
+
+          context.element(
+            options.fetch(:parent),
+            options.fetch(:element),
+            text: formatted,
+            attributes: options.fetch(:attributes, {})
+          )
+        end
+
+        def emit_attribute_value(term, values, options)
+          node = options.fetch(:node)
+          return unless node && values.one?
+
+          formatted = format(values.first, term)
+          node[options.fetch(:attribute)] = formatted if formatted
+        end
+      end
+    end
+  end
+end

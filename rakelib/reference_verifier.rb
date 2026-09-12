@@ -2,26 +2,13 @@
 
 require 'digest'
 require_relative '../lib/facturx'
+require_relative 'reference_examples'
+require_relative 'reference_term_registry'
 
 module Facturx
   class ReferenceVerifier
-    KNOWN_PAIR_MISMATCHES = {
-      '3. EN16931/E04_Betriebskostenabrechnung_NEU/E04_01_Betriebskostenabrechnung_NEU.xml' => %w[
-        15d37a7fb0901316c1dbd5037e64f9a531fb994a536f0404db41fc733d2f2b47
-        14b08cb538ea0556b8e6256dea832a326140307c4ad1d9457428e51267885730
-      ],
-      '3. EN16931/E14_Kraftfahrversicherung/E14_01_Kraftfahrversicherung.xml' => %w[
-        d4e8931a28232305d8973263708717ce2f252d23aef89ddf0d2a63220791644f
-        62e9834a192a1cb0f4dcf7be8cc179a942ff4c5066441da58a26755caa579c27
-      ]
-    }.transform_values(&:freeze).freeze
-    EXPECTED_PROFILES = {
-      '0. MINIMUM' => :minimum,
-      '1. BASIC WL' => :basic_wl,
-      '2. BASIC' => :basic,
-      '3. EN16931' => :en16931,
-      '4. EXTENDED' => :extended
-    }.freeze
+    KNOWN_PAIR_MISMATCHES = ReferenceExamples::KNOWN_PAIR_MISMATCHES
+    EXPECTED_PROFILES = ReferenceExamples::PROFILES
     INVALID_VALUE_CODES = %i[empty_value invalid_value].freeze
 
     def initialize(root:)
@@ -30,6 +17,7 @@ module Facturx
 
     def call
       verify_reference_files
+      verify_term_registry
       verify_node_names
       paths = example_paths
       paths.each { |path| verify_example(path) }
@@ -53,6 +41,14 @@ module Facturx
           raise "#{entry.id} references an unknown D22B node: #{name}" unless schema.include?(%(name="#{name}"))
         end
       end
+    end
+
+    def verify_term_registry
+      ReferenceTermRegistry.new(root: @root).verify(profile_references)
+    end
+
+    def profile_references
+      Terms::REFERENCE_FILES.slice(*EXPECTED_PROFILES.values)
     end
 
     def schema_source

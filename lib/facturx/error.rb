@@ -13,6 +13,9 @@ module Facturx
   class InvalidXmlError < Error; end
   class UnknownProfileError < InvalidXmlError; end
   class XsdValidationError < InvalidXmlError; end
+  class UnsupportedProfileError < Error; end
+  class FormattingError < Error; end
+  class ConformanceError < Error; end
   class InvalidPdfError < Error; end
   class ProtectedPdfError < InvalidPdfError; end
   class ComposerUnavailableError < Error; end

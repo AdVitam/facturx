@@ -1,6 +1,6 @@
 # facturx
 
-`facturx` reads and validates Factur-X XML, creates PDF/A-3b Factur-X invoices from existing PDFs, and extracts their embedded XML.
+`facturx` builds, reads, and validates Factur-X XML, creates PDF/A-3b Factur-X invoices from existing PDFs, and extracts their embedded XML.
 
 The first release supports Factur-X 1.09.2 / ZUGFeRD 2.5.2 with the MINIMUM, BASIC WL, BASIC, EN 16931, and EXTENDED profiles.
 
@@ -26,12 +26,12 @@ require 'facturx'
 xml = File.binread('invoice.xml')
 pdf = File.binread('invoice.pdf')
 
-Facturx.verify_xml(xml: xml) # => true
+Facturx.verify_xml(xml: xml)
 
 reading = Facturx.read(xml)
-reading.document.invoice_number # => "F-2023-004"
-reading.document.totals.grand_total # => BigDecimal("120.00")
-reading.diagnostics # => [] for a complete EN16931 document
+reading.document.invoice_number
+reading.document.totals.grand_total
+reading.diagnostics
 
 facturx_pdf = Facturx.attach(pdf: pdf, xml: xml)
 File.binwrite('invoice-facturx.pdf', facturx_pdf)
@@ -39,6 +39,38 @@ File.binwrite('invoice-facturx.pdf', facturx_pdf)
 embedded_xml = Facturx.extract_xml(pdf: facturx_pdf)
 pdf_reading = Facturx.read(facturx_pdf)
 ```
+
+Build a typed document with the nested DSL, validate it without generating XML, or generate XML and attach it to an existing PDF:
+
+```ruby
+document = Facturx::Document.build(
+  invoice_number: 'INV-2026-0042',
+  type_code: '380',
+  issue_date: Date.new(2026, 9, 12),
+  currency: 'EUR'
+) do |invoice|
+  invoice.seller do |seller|
+    seller.name = 'Seller SAS'
+    seller.address(country_code: 'FR')
+  end
+  invoice.buyer(name: 'Buyer SAS')
+  invoice.totals(
+    tax_basis_total: BigDecimal('100.00'),
+    grand_total: BigDecimal('120.00'),
+    due_payable: BigDecimal('120.00')
+  )
+end
+
+report = Facturx.validate_document(document:, profile: :minimum)
+report.valid?
+
+xml = Facturx.build_xml(document, profile: :minimum)
+facturx_pdf = Facturx.generate(pdf:, document:, profile: :minimum)
+```
+
+`profile:` accepts one of `:minimum`, `:basic_wl`, `:basic`, `:en16931`, or `:extended`, as well as the corresponding canonical `Facturx::Profile`. When BT-24 is absent, the writer inserts the selected profile's guideline URN. A conflicting BT-24 is reported as a profile mismatch.
+
+`validate_document` returns an immutable report containing every conformance issue found. `build_xml` and `generate` raise `Facturx::ConformanceError` with that report when the document is invalid. Values are serialized from their declared semantic type; monetary values with more than two decimal places are rejected instead of being rounded implicitly. Generated XML is always checked against the selected profile's XSD.
 
 `verify_xml` infers the profile from BT-24 and validates the document against that profile's XSD. It returns `true` on success and raises a typed `Facturx::Error` on failure.
 
@@ -58,7 +90,7 @@ Facturx.read(xml, on_unknown_profile: :raise)
 
 The semantic registry covers all 184 EN16931 business terms and the MINIMUM, BASIC WL, and BASIC subsets. EXTENDED-only fields remain available in `Reading#source` and are reported as unmapped until their model is added.
 
-Reading is not a fidelity round-trip. To reissue an incoming invoice, retain and reuse `Reading#source`; a future writer built from `Reading#document` cannot reproduce fields outside the semantic model.
+Reading is not a fidelity round-trip. To reissue an incoming invoice, retain and reuse `Reading#source`; the writer cannot reproduce fields outside the semantic model.
 
 The byte-string API materializes PDF streams in memory. Process untrusted PDFs in a resource-limited worker; limiting only the input file size does not prevent amplification by a compressed embedded stream.
 
@@ -76,9 +108,9 @@ The gem invokes Ghostscript as an external process. It does not distribute Ghost
 
 ## Validation scope
 
-Version 0.1 validates XML structure with the official XSDs. It does not yet run the Factur-X Schematron business rules. XSD validation alone must not be presented as complete semantic or regulatory validation.
+The gem validates generated documents against its EN16931 semantic registry and the official profile XSDs. It does not yet run the Factur-X Schematron business rules, calculate totals, or evaluate accounting consistency. These checks must not be presented as complete regulatory validation.
 
-The gem does not generate invoice XML or the visual invoice PDF, communicate with a PDP, or implement e-reporting.
+The gem does not generate the visual invoice PDF, communicate with a PDP, or implement e-reporting. EXTENDED-only fields are not generated until they are represented in the typed model.
 
 ## Development
 

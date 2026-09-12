@@ -10,4 +10,5 @@ group :development, :test do
   gem 'rubocop', require: false
   gem 'rubocop-performance', require: false
   gem 'rubocop-rspec', require: false
+  gem 'rubyzip', '~> 3.6'
 end

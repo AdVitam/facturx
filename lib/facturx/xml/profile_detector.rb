@@ -2,14 +2,12 @@
 
 require_relative '../profiles'
 require_relative '../error'
+require_relative 'namespaces'
 
 module Facturx
   module Xml
     class ProfileDetector
-      NAMESPACES = {
-        'ram' => 'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100',
-        'rsm' => 'urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100'
-      }.freeze
+      NAMESPACES = Namespaces::MAP
       GUIDELINE_XPATH = '/rsm:CrossIndustryInvoice/rsm:ExchangedDocumentContext/' \
                         'ram:GuidelineSpecifiedDocumentContextParameter/ram:ID'
 

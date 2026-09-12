@@ -25,6 +25,14 @@ RSpec.describe Gem::Specification do
     expect(files).to include(*runtime_files, 'LICENSE.txt', 'NOTICE.md', 'README.md')
   end
 
+  it 'packages every RBI file' do
+    rbi_files = Dir.chdir(root) do
+      Dir['rbi/**/*'].select { |path| File.file?(path) }
+    end
+
+    expect(files).to include('rbi/facturx.rbi', *rbi_files)
+  end
+
   it 'packages every schema referenced by a profile' do
     profile_schemas = Facturx::Profiles.all.map { |profile| profile.xsd_path.delete_prefix("#{root}/") }
 
@@ -53,5 +61,9 @@ RSpec.describe Gem::Specification do
     development_files = files.grep(%r{\A(?:spec|coverage|pkg)/}) + (files & %w[AGENTS.md Gemfile.lock])
 
     expect(development_files).to be_empty
+  end
+
+  it 'does not add Sorbet as a runtime dependency' do
+    expect(specification.runtime_dependencies.map(&:name)).not_to include('sorbet-runtime')
   end
 end
