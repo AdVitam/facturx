@@ -75,7 +75,7 @@ module Facturx
             identifier&.scheme_id,
             node:,
             attribute: options.fetch(:scheme_attribute, 'schemeID'),
-            group_present: !value.nil?
+            group_present: !node.nil?
           )
         end
 

@@ -62,10 +62,10 @@ module Facturx
 
         def delivery_identifier(parent, value)
           if value&.scheme_id
-            return unless observe?('BT-71', value.value)
-
-            node = technical(parent, 'ram:GlobalID', format_identifier_value('BT-71', value.value))
-            emit_attribute('BT-71-1', value.scheme_id, node:, attribute: 'schemeID', group_present: true)
+            node = if observe?('BT-71', value.value)
+                     technical(parent, 'ram:GlobalID', format_identifier_value('BT-71', value.value))
+                   end
+            emit_attribute('BT-71-1', value.scheme_id, node:, attribute: 'schemeID', group_present: !node.nil?)
           else
             emit('BT-71', value&.value, element: 'ram:ID', parent:)
             observe?('BT-71-1', nil, group_present: false)

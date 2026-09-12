@@ -21,6 +21,7 @@ module Facturx
           term = Terms.fetch(id)
           values = present_values(value)
           group_present = options.fetch(:group_present, !options.fetch(:node).nil?)
+          return unrepresentable(id, 'Qualifier requires its carrier') if !group_present && values.any?
           return unless group_present
 
           accepted = tracker.observe_term?(term, values:, path: term.xpath)

@@ -182,6 +182,31 @@ RSpec.describe Facturx::Writer do
           .to raise_conformance_error_for('BT-148')
       end
 
+      it 'reports an attachment qualifier without content' do
+        expect { writer.call(document: document_with_attachment_qualifier, profile:) }
+          .to raise_conformance_error_for('BT-125-1', code: :invalid_value)
+      end
+
+      it 'reports a classification qualifier without a code' do
+        expect { writer.call(document: document_with_classification_qualifier, profile:) }
+          .to raise_conformance_error_for('BT-158-1', code: :invalid_value)
+      end
+
+      it 'reports a quantity unit without a value' do
+        expect { writer.call(document: document_with_quantity_unit, profile:) }
+          .to raise_conformance_error_for('BT-130', code: :invalid_value)
+      end
+
+      it 'reports an identifier scheme without a value' do
+        expect { writer.call(document: document_with_payee_identifier_scheme, profile:) }
+          .to raise_conformance_error_for('BT-61-1', code: :invalid_value)
+      end
+
+      it 'reports a delivery identifier scheme without a value' do
+        expect { writer.call(document: document_with_delivery_identifier_scheme, profile:) }
+          .to raise_conformance_error_for('BT-71-1', code: :invalid_value)
+      end
+
       it 'uses the identifier as a project name when the supplied name is blank' do
         id_only_document = document.with(
           project_reference: Facturx::DocumentReference.new(id: 'PROJECT', name: ' ')
@@ -354,6 +379,34 @@ RSpec.describe Facturx::Writer do
       gross_price: Facturx::Price.new(basis_quantity: document.lines.first.quantity)
     )
     document.with(lines: [line])
+  end
+
+  def document_with_attachment_qualifier
+    attachment = document.supporting_documents.first.with(content: nil)
+    document.with(supporting_documents: [attachment])
+  end
+
+  def document_with_classification_qualifier
+    classification = Facturx::ProductClassification.new(list_id: 'STI')
+    product = document.lines.first.product.with(classifications: [classification])
+    line = document.lines.first.with(product:)
+    document.with(lines: [line])
+  end
+
+  def document_with_quantity_unit
+    line = document.lines.first.with(quantity: Facturx::Quantity.new(unit_code: 'C62'))
+    document.with(lines: [line])
+  end
+
+  def document_with_payee_identifier_scheme
+    identifier = Facturx::Identifier.new(scheme_id: '0002')
+    document.with(payee: document.payee.with(legal_registration: identifier))
+  end
+
+  def document_with_delivery_identifier_scheme
+    identifier = Facturx::Identifier.new(scheme_id: '0088')
+    delivery = document.delivery.with(location_identifier: identifier, party: nil)
+    document.with(delivery:)
   end
 
   def blank_tax_type_document

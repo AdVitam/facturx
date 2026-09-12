@@ -8,7 +8,7 @@ module Facturx
           def call(parent:, value:, amount_id:, unit_id:, element:)
             node = emit(amount_id, value&.value, element:, parent:).first
             emit_attribute(unit_id, value&.unit_code, node:, attribute: 'unitCode',
-                                                      group_present: !value&.value.nil?)
+                                                      group_present: !node.nil?)
           end
         end
       end

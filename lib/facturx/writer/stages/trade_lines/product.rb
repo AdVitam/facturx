@@ -39,17 +39,18 @@ module Facturx
 
           def classifications(parent, values)
             items = Array(values)
+            items.select { |item| item.code.to_s.strip.empty? }.each { |item| classification(parent, item) }
             return unless observe?('BT-158', items.map(&:code))
 
-            items.each { |item| classification(parent, item) }
+            items.reject { |item| item.code.to_s.strip.empty? }.each { |item| classification(parent, item) }
           end
 
           def classification(parent, item)
             container(parent, 'ram:DesignatedProductClassification') do |node|
               code = technical(node, 'ram:ClassCode', format_identifier_value('BT-158', item.code))
-              emit_attribute('BT-158-1', item.list_id, node: code, attribute: 'listID', group_present: !item.code.nil?)
+              emit_attribute('BT-158-1', item.list_id, node: code, attribute: 'listID', group_present: !code.nil?)
               emit_attribute('BT-158-2', item.list_version_id, node: code, attribute: 'listVersionID',
-                                                               group_present: !item.code.nil?)
+                                                               group_present: !code.nil?)
             end
           end
 
