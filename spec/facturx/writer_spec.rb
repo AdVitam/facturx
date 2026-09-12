@@ -172,6 +172,18 @@ RSpec.describe Facturx::Writer do
       it 'omits references without their identifiers' do
         expect(orphan_references(writer.call(document: document_without_reference_values, profile:))).to be_empty
       end
+
+      it 'reports a tax total without a tax currency' do
+        invalid_document = document.with(tax_currency: nil)
+
+        expect { writer.call(document: invalid_document, profile:) }
+          .to raise_conformance_error_for('BT-111', code: :invalid_value)
+      end
+
+      it 'reports a tax total in the invoice currency' do
+        expect { writer.call(document: same_currency_tax_total_document, profile:) }
+          .to raise_conformance_error_for('BT-111', code: :invalid_value)
+      end
     end
   end
 
@@ -227,9 +239,10 @@ RSpec.describe Facturx::Writer do
     end
   end
 
-  def raise_conformance_error_for(term_id)
+  def raise_conformance_error_for(term_id, code: nil)
     raise_error(Facturx::ConformanceError) do |error|
-      expect(error.details.fetch(:report).issues).to include(have_attributes(term_id:))
+      issue = code ? have_attributes(code:, term_id:) : have_attributes(term_id:)
+      expect(error.details.fetch(:report).issues).to include(issue)
     end
   end
 
@@ -246,6 +259,13 @@ RSpec.describe Facturx::Writer do
       allowances: blank_adjustment_tax_types(document.allowances),
       charges: blank_adjustment_tax_types(document.charges),
       lines: blank_line_tax_types
+    )
+  end
+
+  def same_currency_tax_total_document
+    document.with(
+      tax_currency: document.currency,
+      totals: document.totals.with(tax_total: BigDecimal('40'), tax_total_in_tax_currency: BigDecimal('44'))
     )
   end
 

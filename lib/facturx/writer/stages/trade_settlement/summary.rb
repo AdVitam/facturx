@@ -41,9 +41,21 @@ module Facturx
 
         def emit_tax_totals(parent, totals)
           emit('BT-110', totals.tax_total, element: 'ram:TaxTotalAmount', parent:,
-                                           attributes: currency_attribute(document.currency))
-          emit('BT-111', totals.tax_total_in_tax_currency, element: 'ram:TaxTotalAmount', parent:,
-                                                           attributes: currency_attribute(document.tax_currency))
+                                           attributes: { 'currencyID' => document.currency })
+          emit_tax_total_in_tax_currency(parent, totals.tax_total_in_tax_currency)
+        end
+
+        def emit_tax_total_in_tax_currency(parent, value)
+          return observe?('BT-111', nil) unless value
+          return unrepresentable('BT-111', 'Tax total requires a distinct tax currency') unless distinct_tax_currency?
+
+          emit('BT-111', value, element: 'ram:TaxTotalAmount', parent:,
+                               attributes: { 'currencyID' => document.tax_currency })
+        end
+
+        def distinct_tax_currency?
+          tax_currency = document.tax_currency
+          !tax_currency.to_s.strip.empty? && tax_currency != document.currency
         end
 
         def emit_balance(parent, totals)
@@ -51,10 +63,6 @@ module Facturx
           emit('BT-112', totals.grand_total, element: 'ram:GrandTotalAmount', parent:)
           emit('BT-113', totals.prepaid, element: 'ram:TotalPrepaidAmount', parent:)
           emit('BT-115', totals.due_payable, element: 'ram:DuePayableAmount', parent:)
-        end
-
-        def currency_attribute(currency)
-          currency ? { 'currencyID' => currency } : {}
         end
 
         def preceding_invoices(parent)
