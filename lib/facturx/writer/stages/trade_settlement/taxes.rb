@@ -39,13 +39,13 @@ module Facturx
           emit('BT-118', tax.category_code, element: 'ram:CategoryCode', parent:)
           emit('BT-121', tax.exemption_reason_code, element: 'ram:ExemptionReasonCode', parent:)
           tax_point_date(parent) if include_tax_point
-          tax_due_date_type(parent, tax)
+          tax_due_date_type(parent, tax, check_conflict: include_tax_point)
           emit('BT-119', tax.rate, element: 'ram:RateApplicablePercent', parent:)
         end
 
-        def tax_due_date_type(parent, tax)
+        def tax_due_date_type(parent, tax, check_conflict:)
           document_code = document.vat_point_date_code
-          if tax.due_date_type_code && document_code && tax.due_date_type_code != document_code
+          if check_conflict && tax.due_date_type_code && document_code && tax.due_date_type_code != document_code
             report_unrepresentable_attribute('BG-23', model: :document, attribute: :vat_point_date_code)
           end
           emit('BT-8', tax.due_date_type_code || document_code, element: 'ram:DueDateTypeCode', parent:)

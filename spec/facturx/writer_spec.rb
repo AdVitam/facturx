@@ -326,6 +326,13 @@ RSpec.describe Facturx::Writer do
           .to raise_unrepresentable_attribute('BG-23', :document, :vat_point_date_code)
       end
 
+      it 'preserves distinct due date type codes after the first tax breakdown' do
+        tax_codes = round_trip(document_with_distinct_tax_due_date_codes)
+                    .tax_breakdowns.map(&:due_date_type_code)
+
+        expect(tax_codes).to eq(%w[5 72])
+      end
+
       it 'classifies a header charge moved to allowances as an allowance' do
         expect(header_allowance_after_round_trip).to have_attributes(indicator: false)
       end
@@ -538,6 +545,12 @@ RSpec.describe Facturx::Writer do
   def document_with_conflicting_vat_point_code
     tax = document.tax_breakdowns.first.with(due_date_type_code: 'XX')
     document.with(tax_breakdowns: [tax])
+  end
+
+  def document_with_distinct_tax_due_date_codes
+    first = document.tax_breakdowns.first.with(due_date_type_code: '5')
+    second = first.with(category_code: 'AA', due_date_type_code: '72')
+    document.with(vat_point_date_code: '5', tax_breakdowns: [first, second])
   end
 
   def header_allowance_after_round_trip
