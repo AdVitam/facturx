@@ -38,11 +38,25 @@ module Facturx
           end
 
           def classifications(parent, values)
-            items = Array(values)
-            items.select { |item| item.code.to_s.strip.empty? }.each { |item| classification(parent, item) }
+            emit_unrepresentable_classifications(parent, values)
+            emit_representable_classifications(parent, values)
+          end
+
+          def emit_unrepresentable_classifications(parent, values)
+            Array(values).reject { |item| classification_code?(item) }.each do |item|
+              classification(parent, item)
+            end
+          end
+
+          def emit_representable_classifications(parent, values)
+            items = Array(values).select { |item| classification_code?(item) }
             return unless observe?('BT-158', items.map(&:code))
 
-            items.reject { |item| item.code.to_s.strip.empty? }.each { |item| classification(parent, item) }
+            items.each { |item| classification(parent, item) }
+          end
+
+          def classification_code?(item)
+            !item.code.to_s.strip.empty?
           end
 
           def classification(parent, item)

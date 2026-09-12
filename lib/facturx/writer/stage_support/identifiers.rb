@@ -10,7 +10,7 @@ module Facturx
           value_id = options.fetch(:value_id)
           value = identifier&.value
           node = emit(value_id, value, element: options.fetch(:element), parent:).first
-          emit_identifier_scheme(node, identifier, value, options)
+          emit_identifier_scheme(node, identifier, options)
           node
         end
 
@@ -66,7 +66,7 @@ module Facturx
           end
         end
 
-        def emit_identifier_scheme(node, identifier, value, options)
+        def emit_identifier_scheme(node, identifier, options)
           scheme_id = options[:scheme_id]
           return unless scheme_id
 
