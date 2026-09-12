@@ -104,6 +104,12 @@ RSpec.describe Facturx::Reader do
     expect(reader.call(complete_en16931_xml).document.lines.first.net_price.discount).to be_nil
   end
 
+  it 'diagnoses a missing net price amount without creating a price model' do
+    reading = reader.call(xml_without_net_price)
+    expect([reading.document.lines.first.net_price, diagnostic_codes(reading, 'BT-146')])
+      .to eq([nil, [:missing_required_term]])
+  end
+
   it 'maps product classification codes as scalar values' do
     classification = reader.call(xml_with_product_classification).document.lines.first.product.classifications.first
     expect(classification).to have_attributes(code: '1234', list_id: 'STI', list_version_id: '1')
@@ -213,15 +219,20 @@ RSpec.describe Facturx::Reader do
   end
 
   it 'maps gross price discounts only for an allowance indicator' do
-    prices = %w[false true].map do |indicator|
+    prices = [false, true, nil].map do |indicator|
       reader.call(xml_with_gross_price(indicator)).document.lines.first.gross_price
     end
-    expect(prices.map(&:discount)).to eq([BigDecimal('5'), nil])
+    expect(prices.map(&:discount)).to eq([BigDecimal('5'), nil, nil])
   end
 
   it 'diagnoses a charge indicator inside a gross price discount' do
     reading = reader.call(xml_with_gross_price('true'))
     expect(reading.diagnostics).to include(have_attributes(code: :invalid_value, term_id: 'BT-147-02'))
+  end
+
+  it 'marks gross price allowance amounts before evaluating true or absent indicators' do
+    readings = [true, nil].map { |indicator| reader.call(xml_with_gross_price(indicator)) }
+    expect(readings.map { |reading| gross_price_discount_diagnostics(reading) }).to eq([[false, true], [false, false]])
   end
 
   it 'diagnoses a non-102 date format' do
@@ -321,6 +332,12 @@ RSpec.describe Facturx::Reader do
     reading.diagnostics.any? { |item| item.code == :unmapped_element }
   end
 
+  def gross_price_discount_diagnostics(reading)
+    diagnostics = reading.diagnostics
+    [diagnostics.any? { |item| item.code == :unmapped_element && item.path.end_with?('/ram:ActualAmount') },
+     diagnostics.any? { |item| item.code == :invalid_value && item.term_id == 'BT-147-02' }]
+  end
+
   def diagnostic_summary(reading, term_id)
     [diagnostic_codes(reading, term_id), unmapped_diagnostics?(reading)]
   end
@@ -402,6 +419,10 @@ RSpec.describe Facturx::Reader do
   def xml_with_empty_quantity
     en16931_xml.sub('<ram:BilledQuantity unitCode="C62">1</ram:BilledQuantity>',
                     '<ram:BilledQuantity unitCode="C62"></ram:BilledQuantity>')
+  end
+
+  def xml_without_net_price
+    en16931_xml.sub(%r{\s*<ram:NetPriceProductTradePrice>.*?</ram:NetPriceProductTradePrice>}m, '')
   end
 
   def header_tax_xml
@@ -502,9 +523,12 @@ RSpec.describe Facturx::Reader do
   end
 
   def xml_with_gross_price(indicator)
+    unless indicator.nil?
+      charge_indicator = "<ram:ChargeIndicator><udt:Indicator>#{indicator}</udt:Indicator></ram:ChargeIndicator>"
+    end
     gross_price = '<ram:GrossPriceProductTradePrice><ram:ChargeAmount>100</ram:ChargeAmount>' \
                   '<ram:AppliedTradeAllowanceCharge>' \
-                  "<ram:ChargeIndicator><udt:Indicator>#{indicator}</udt:Indicator></ram:ChargeIndicator>" \
+                  "#{charge_indicator}" \
                   '<ram:ActualAmount>5</ram:ActualAmount></ram:AppliedTradeAllowanceCharge>' \
                   '</ram:GrossPriceProductTradePrice>'
     en16931_xml.sub('<ram:NetPriceProductTradePrice>', "#{gross_price}<ram:NetPriceProductTradePrice>")

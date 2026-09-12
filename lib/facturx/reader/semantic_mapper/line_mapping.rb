@@ -79,7 +79,10 @@ module Facturx
       def price(parent, parent_base, gross:)
         prefix = gross ? 'Gross' : 'Net'
         node = parent.at_xpath("./ram:SpecifiedLineTradeAgreement/ram:#{prefix}PriceProductTradePrice", NAMESPACES)
-        return unless node
+        unless node
+          value('BT-146', context: parent, base_xpath: parent_base) unless gross
+          return
+        end
 
         base = "#{parent_base}/ram:SpecifiedLineTradeAgreement/ram:#{prefix}PriceProductTradePrice"
         Price.new(**price_attributes(node, base, gross))
@@ -95,8 +98,9 @@ module Facturx
       end
 
       def price_discount(node, base, amount_id)
+        amount = value(amount_id, context: node, base_xpath: base)
         indicator = read_price_allowance_indicator(node, base)
-        return value(amount_id, context: node, base_xpath: base) if indicator == false
+        return amount if indicator == false
         return unless indicator == true
 
         @terms.add(:invalid_value, 'BT-147-02', base, 'Gross price discount cannot be a charge', value: indicator)
