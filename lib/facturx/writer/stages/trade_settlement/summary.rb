@@ -50,7 +50,7 @@ module Facturx
           return unrepresentable('BT-111', 'Tax total requires a distinct tax currency') unless distinct_tax_currency?
 
           emit('BT-111', value, element: 'ram:TaxTotalAmount', parent:,
-                               attributes: { 'currencyID' => document.tax_currency })
+                                attributes: { 'currencyID' => document.tax_currency })
         end
 
         def distinct_tax_currency?
