@@ -241,8 +241,12 @@ RSpec.describe Facturx::Writer do
       tax_breakdowns: blank_tax_types(document.tax_breakdowns),
       allowances: blank_adjustment_tax_types(document.allowances),
       charges: blank_adjustment_tax_types(document.charges),
-      lines: document.lines.map { |line| line.with(tax: blank_tax_type(line.tax)) }
+      lines: blank_line_tax_types
     )
+  end
+
+  def blank_line_tax_types
+    document.lines.map { |line| line.with(tax: blank_tax_type(line.tax)) }
   end
 
   def blank_adjustment_tax_types(adjustments)

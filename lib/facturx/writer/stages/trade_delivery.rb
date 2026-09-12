@@ -70,7 +70,6 @@ module Facturx
             observe?('BT-71-1', nil, group_present: false)
           end
         end
-
       end
     end
   end

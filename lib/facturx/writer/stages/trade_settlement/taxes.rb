@@ -45,8 +45,9 @@ module Facturx
         end
 
         def tax_point_date(parent)
-          emit_date(parent, 'BT-7', document.vat_point_date, wrapper: 'ram:TaxPointDate',
-                                                   value_element: 'udt:DateString')
+          emit_date(
+            parent, 'BT-7', document.vat_point_date, wrapper: 'ram:TaxPointDate', value_element: 'udt:DateString'
+          )
         end
 
         def billing_period(parent)
