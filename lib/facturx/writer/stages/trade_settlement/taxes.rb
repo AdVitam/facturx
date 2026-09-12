@@ -89,7 +89,7 @@ module Facturx
         end
 
         def adjustment_tax(parent, tax, category_id, rate_id)
-          return missing_adjustment_tax(category_id, rate_id) unless tax
+          return missing_adjustment_tax?(category_id, rate_id) unless tax
 
           container(parent, 'ram:CategoryTradeTax') do |node|
             technical(node, 'ram:TypeCode', tax.type_code || 'VAT')
@@ -98,7 +98,7 @@ module Facturx
           end
         end
 
-        def missing_adjustment_tax(category_id, rate_id)
+        def missing_adjustment_tax?(category_id, rate_id)
           observe?(category_id, nil)
           observe?(rate_id, nil)
         end

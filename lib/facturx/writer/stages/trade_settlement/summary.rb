@@ -8,7 +8,7 @@ module Facturx
 
         def payment_terms(parent, direct_debit)
           values = [document.payment_terms, document.payment_due_date, direct_debit&.mandate_identifier]
-          return missing_payment_terms unless values.any?
+          return missing_payment_terms? unless values.any?
 
           container(parent, 'ram:SpecifiedTradePaymentTerms') do |node|
             emit('BT-20', document.payment_terms, element: 'ram:Description', parent: node)
@@ -17,7 +17,7 @@ module Facturx
           end
         end
 
-        def missing_payment_terms
+        def missing_payment_terms?
           observe?('BT-20', nil)
           observe?('BT-9', nil)
           observe?('BT-89', nil)

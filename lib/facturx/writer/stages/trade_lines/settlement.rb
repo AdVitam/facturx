@@ -70,7 +70,7 @@ module Facturx
           end
 
           def line_invoiced_object(parent, value)
-            return observe_missing_invoiced_object unless value
+            return observe_missing_invoiced_object? unless value
 
             container(parent, 'ram:AdditionalReferencedDocument') do |node|
               emit('BT-128', value.value, element: 'ram:IssuerAssignedID', parent: node)
@@ -79,7 +79,7 @@ module Facturx
             end
           end
 
-          def observe_missing_invoiced_object
+          def observe_missing_invoiced_object?
             observe?('BT-128', nil)
             observe?('BT-128-1', nil, group_present: false)
           end

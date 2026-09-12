@@ -59,13 +59,13 @@ module Facturx
           end
 
           def gross_discount(parent, value)
-            return observe_missing_discount unless value
+            return observe_missing_discount? unless value
             return unless observe?('BT-147-01', false) && observe?('BT-147-02', false)
 
             emit_discount(parent, value)
           end
 
-          def observe_missing_discount
+          def observe_missing_discount?
             observe?('BT-147-01', nil)
             observe?('BT-147-02', nil, group_present: false)
             observe?('BT-147', nil)
