@@ -83,7 +83,7 @@ module Facturx
 
           def project(parent)
             value = document.project_reference
-            unless value
+            unless value && (value.id || value.name)
               observe('BT-11', nil)
               return
             end
