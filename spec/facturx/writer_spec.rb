@@ -543,14 +543,20 @@ RSpec.describe Facturx::Writer do
   def header_allowance_after_round_trip
     charge = document.charges.first
     adjusted = document.with(allowances: [charge], charges: [])
-    Facturx::Reader.new.call(writer.call(document: adjusted, profile:)).document.allowances.first
+    round_trip(adjusted).allowances.first
   end
 
   def line_allowance_after_round_trip
-    charge = document.lines.first.charges.first
-    line = document.lines.first.with(allowances: [charge], charges: [])
-    adjusted = document.with(lines: [line])
-    Facturx::Reader.new.call(writer.call(document: adjusted, profile:)).document.lines.first.allowances.first
+    round_trip(document_with_line_charge_as_allowance).lines.first.allowances.first
+  end
+
+  def document_with_line_charge_as_allowance
+    line = document.lines.first
+    document.with(lines: [line.with(allowances: [line.charges.first], charges: [])])
+  end
+
+  def round_trip(document)
+    Facturx::Reader.new.call(writer.call(document:, profile:)).document
   end
 
   def document_without_reference_values
