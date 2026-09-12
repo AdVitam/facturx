@@ -232,6 +232,22 @@ RSpec.describe Facturx::Reader do
     )
   end
 
+  it 'prioritizes an invalid format over an empty date value without leaving the format unmapped' do
+    reading = reader.call(xml_with_empty_invalid_issue_date)
+    expect(diagnostic_summary(reading, 'BT-2')).to eq([[:invalid_value], false])
+  end
+
+  it 'marks a quantity unit when its empty amount cannot be mapped' do
+    reading = reader.call(xml_with_empty_quantity)
+    expect([diagnostic_codes(reading, 'BT-129'), diagnostic_codes(reading, 'BT-130'), unmapped_diagnostics?(reading)])
+      .to eq([[:empty_value], [], false])
+  end
+
+  it 'marks a reference scheme and type code when its identifier is empty' do
+    reading = reader.call(xml_with_empty_invoiced_object_reference)
+    expect(diagnostic_summary(reading, 'BT-18')).to eq([[:empty_value], false])
+  end
+
   it 'sniffs byte strings independently from their declared encoding' do
     bytes = +'plain XML bytes'
     bytes.force_encoding(Encoding::UTF_16LE)
@@ -305,6 +321,14 @@ RSpec.describe Facturx::Reader do
     reading.diagnostics.any? { |item| item.code == :unmapped_element }
   end
 
+  def diagnostic_summary(reading, term_id)
+    [diagnostic_codes(reading, term_id), unmapped_diagnostics?(reading)]
+  end
+
+  def diagnostic_codes(reading, term_id)
+    reading.diagnostics.filter_map { |item| item.code if item.term_id == term_id }
+  end
+
   def defective_xml
     minimum_xml
       .sub('<ram:ID>F-2023-001</ram:ID>', '<ram:ID>F-2023-001</ram:ID><ram:ID>duplicate</ram:ID>')
@@ -370,6 +394,16 @@ RSpec.describe Facturx::Reader do
                                     '<udt:DateString format="102">invalid-date')
   end
 
+  def xml_with_empty_invalid_issue_date
+    en16931_xml.sub('<udt:DateTimeString format="102">20230101</udt:DateTimeString>',
+                    '<udt:DateTimeString format="610"></udt:DateTimeString>')
+  end
+
+  def xml_with_empty_quantity
+    en16931_xml.sub('<ram:BilledQuantity unitCode="C62">1</ram:BilledQuantity>',
+                    '<ram:BilledQuantity unitCode="C62"></ram:BilledQuantity>')
+  end
+
   def header_tax_xml
     "<ram:ApplicableTradeTax>\n                <ram:TypeCode>VAT</ram:TypeCode>\n                " \
       "<ram:CategoryCode>S</ram:CategoryCode>\n            </ram:ApplicableTradeTax>"
@@ -409,6 +443,10 @@ RSpec.describe Facturx::Reader do
                                                      '<ram:ReferenceTypeCode>AA</ram:ReferenceTypeCode>') +
                  reference_xml('SUPPORT', '916', '<ram:URIID>https://example.test/invoice</ram:URIID>')
     complete_en16931_xml.sub('<ram:SellerTradeParty>', "#{references}<ram:SellerTradeParty>")
+  end
+
+  def xml_with_empty_invoiced_object_reference
+    xml_with_references.sub('<ram:IssuerAssignedID>OBJECT</ram:IssuerAssignedID>', '<ram:IssuerAssignedID/>')
   end
 
   def xml_with_basic_credit_transfer

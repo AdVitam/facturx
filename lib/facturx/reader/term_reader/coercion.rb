@@ -23,10 +23,15 @@ module Facturx
         @coercer.call(node.text, type:, term_id:, path: node.path)
       end
 
+      def coerce_term_value(node, term)
+        @coercer.call(node.text, type: term.type, scale: term.scale, term_id: term.id, path: node.path)
+      end
+
       def coerce(node, term)
+        return diagnose_date_format(node, term) if invalid_date_format?(node, term)
         return diagnose_empty(node, term) if node.text.strip.empty?
 
-        coerce_value(node, term)
+        coerce_term_value(node, term)
       rescue CoercionError => e
         add(:invalid_value, term.id, node.path, e.message, e.details)
         nil
@@ -45,12 +50,6 @@ module Facturx
       def diagnose_raw_missing(path, term_id)
         add(:missing_required_term, term_id, path, 'Required value is missing')
         nil
-      end
-
-      def coerce_value(node, term)
-        return diagnose_date_format(node, term) if invalid_date_format?(node, term)
-
-        @coercer.call(node.text, type: term.type, scale: term.scale, term_id: term.id, path: node.path)
       end
 
       def invalid_date_format?(node, term)

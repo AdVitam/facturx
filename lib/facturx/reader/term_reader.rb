@@ -46,6 +46,13 @@ module Facturx
         node&.text
       end
 
+      def mark_value(id, context: @document, base_xpath: nil)
+        term = active_term(id)
+        return unless term
+
+        context.xpath(relative_xpath(term.xpath, base_xpath), NAMESPACES).each { |node| mark(node) }
+      end
+
       def mark(node)
         return unless node
 

@@ -14,7 +14,10 @@ module Facturx
         return unless value_id
 
         item = value(value_id, context:, base_xpath:)
-        return unless item
+        unless item
+          @terms.mark_value(scheme_id, context:, base_xpath:) if scheme_id
+          return
+        end
 
         scheme = value(scheme_id, context:, base_xpath:) if scheme_id
         Identifier.new(value: item, scheme_id: scheme)
@@ -22,7 +25,10 @@ module Facturx
 
       def quantity(value_id, unit_id, context:, base_xpath:)
         amount = value(value_id, context:, base_xpath:)
-        return unless amount
+        unless amount
+          @terms.mark_value(unit_id, context:, base_xpath:)
+          return
+        end
 
         unit = value(unit_id, context:, base_xpath:)
         Quantity.new(value: amount, unit_code: unit)
