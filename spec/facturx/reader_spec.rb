@@ -123,6 +123,12 @@ RSpec.describe Facturx::Reader do
                                Facturx::Identifier.new(value: 'GLOBAL', scheme_id: '0088')])
   end
 
+  it 'prefers a local delivery identifier while marking its global alternative' do
+    reading = reader.call(xml_with_local_and_global_delivery_ids)
+    expect([reading.document.delivery.location_identifier, unmapped_diagnostics?(reading)])
+      .to eq([Facturx::Identifier.new(value: 'LOCAL'), false])
+  end
+
   it 'reads BT-7 and BT-8 from the first tax breakdown without scalar diagnostics' do
     reading = reader.call(xml_with_two_tax_breakdowns)
     expect([reading.document.vat_point_date, reading.document.vat_point_date_code,
@@ -381,6 +387,13 @@ RSpec.describe Facturx::Reader do
   def xml_with_delivery_id(kind)
     identifier = kind == 'local' ? '<ram:ID>LOCAL</ram:ID>' : '<ram:GlobalID schemeID="0088">GLOBAL</ram:GlobalID>'
     delivery = "<ram:ApplicableHeaderTradeDelivery><ram:ShipToTradeParty>#{identifier}</ram:ShipToTradeParty>" \
+               '</ram:ApplicableHeaderTradeDelivery>'
+    complete_en16931_xml.sub('<ram:ApplicableHeaderTradeDelivery/>', delivery)
+  end
+
+  def xml_with_local_and_global_delivery_ids
+    identifiers = '<ram:ID>LOCAL</ram:ID><ram:GlobalID schemeID="0088">GLOBAL</ram:GlobalID>'
+    delivery = "<ram:ApplicableHeaderTradeDelivery><ram:ShipToTradeParty>#{identifiers}</ram:ShipToTradeParty>" \
                '</ram:ApplicableHeaderTradeDelivery>'
     complete_en16931_xml.sub('<ram:ApplicableHeaderTradeDelivery/>', delivery)
   end
