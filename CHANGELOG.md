@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Read XML or PDF bytes into an immutable, typed EN16931 document model with structured diagnostics.
+- Map the complete EN16931 semantic term set and the MINIMUM, BASIC WL, and BASIC subsets.
+- Verify semantic mapping provenance and official examples with the maintainer reference task.
+
 ## [0.1.0] - 2026-09-11
 
 ### Added
