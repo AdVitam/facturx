@@ -26,10 +26,9 @@ module Facturx
             emit_tax(node, item, include_tax_point: first)
             first = false
           end
-          return unless first && document.vat_point_date
+          return unless first
 
-          report_unrepresentable_attribute('BG-23', model: :document,
-                                                    attribute: :vat_point_date)
+          report_vat_point_attributes
         end
 
         def emit_tax(parent, tax, include_tax_point:)
@@ -53,6 +52,13 @@ module Facturx
           emit_date(
             parent, 'BT-7', document.vat_point_date, wrapper: 'ram:TaxPointDate', value_element: 'udt:DateString'
           )
+        end
+
+        def report_vat_point_attributes
+          %i[vat_point_date vat_point_date_code].each do |attribute|
+            value = document.public_send(attribute)
+            report_unrepresentable_attribute('BG-23', model: :document, attribute:) if value
+          end
         end
 
         def billing_period(parent)

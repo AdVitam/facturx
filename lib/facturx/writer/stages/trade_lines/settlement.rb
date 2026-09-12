@@ -43,6 +43,7 @@ module Facturx
             ids = ADJUSTMENT_IDS.fetch(group_id)
             each_group(group_id, values, element: 'ram:SpecifiedTradeAllowanceCharge', parent:,
                                          represented_attributes: [:indicator]) do |node, item|
+              report_unrepresentable_attributes(group_id, item.tax) if item.tax
               adjustment_indicator(node, item, group_id, indicator)
               emit_adjustment_fields(node, item, ids)
             end

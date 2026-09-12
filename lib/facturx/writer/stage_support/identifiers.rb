@@ -41,22 +41,22 @@ module Facturx
           end
         end
 
-        def emit_document_reference(parent, id, reference, element)
+        def emit_document_reference(parent, id, reference, element, represented_attributes: [])
           unless reference
             observe?(id, nil)
             return
           end
 
-          report_unrepresentable_reference_attributes(id, reference)
+          report_unrepresentable_reference_attributes(id, reference, represented_attributes:)
 
           container(parent, element) do |node|
             emit(id, reference.id, element: 'ram:IssuerAssignedID', parent: node)
           end
         end
 
-        def report_unrepresentable_reference_attributes(id, reference)
+        def report_unrepresentable_reference_attributes(id, reference, represented_attributes: [])
           %i[line_id name issue_date].each do |attribute|
-            next unless reference.public_send(attribute)
+            next unless reference.public_send(attribute) && !represented_attributes.include?(attribute)
 
             unrepresentable(id, "Document reference #{attribute} cannot be represented")
           end

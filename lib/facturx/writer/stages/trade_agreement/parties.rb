@@ -14,7 +14,8 @@ module Facturx
           end
 
           def seller(parent)
-            within_group('BG-4', document.seller, element: 'ram:SellerTradeParty', parent:) do |node, party|
+            within_group('BG-4', document.seller, element: 'ram:SellerTradeParty', parent:,
+                                      represented_attributes: %i[address contact]) do |node, party|
               write_seller_identity(node, party)
               write_seller_details(node, party)
             end
@@ -36,7 +37,8 @@ module Facturx
           end
 
           def buyer(parent)
-            within_group('BG-7', document.buyer, element: 'ram:BuyerTradeParty', parent:) do |node, party|
+            within_group('BG-7', document.buyer, element: 'ram:BuyerTradeParty', parent:,
+                                      represented_attributes: %i[address contact]) do |node, party|
               write_buyer_identity(node, party)
               write_buyer_details(node, party)
             end
@@ -57,7 +59,7 @@ module Facturx
 
           def tax_representative(parent)
             within_group('BG-11', document.tax_representative, element: 'ram:SellerTaxRepresentativeTradeParty',
-                                                               parent:) do |node, party|
+                                                               parent:, represented_attributes: [:address]) do |node, party|
               emit('BT-62', party.name, element: 'ram:Name', parent: node)
               emit_address(node, party.address, 'BG-12', self.class::REPRESENTATIVE_ADDRESS)
               emit_tax_registration(node, 'BT-63', party.vat_identifier, 'VA')

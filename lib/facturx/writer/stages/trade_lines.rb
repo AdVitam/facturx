@@ -4,7 +4,9 @@ module Facturx
   class Writer
     module Stages
       class TradeLines < Stage
-        REPRESENTED_ATTRIBUTES = %i[gross_price net_price buyer_order_reference].freeze
+        REPRESENTED_ATTRIBUTES = %i[
+          product gross_price net_price tax period allowances charges buyer_order_reference
+        ].freeze
 
         term_ids(*%w[
                    BT-126 BT-127 BT-157 BT-157-1 BT-155 BT-156 BT-153 BT-154 BT-160 BT-161 BT-158 BT-158-1

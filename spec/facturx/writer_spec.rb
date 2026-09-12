@@ -195,6 +195,10 @@ RSpec.describe Facturx::Writer do
           .to raise_unrepresentable_attribute('BG-13', :party, :vat_identifier)
       end
 
+      it 'accepts a ship-to location without a party' do
+        expect { writer.call(document: document_with_ship_to_location, profile:) }.not_to raise_error
+      end
+
       it 'keeps supported seller attributes valid' do
         expect { writer.call(document:, profile:) }.not_to raise_error
       end
@@ -202,6 +206,11 @@ RSpec.describe Facturx::Writer do
       it 'reports unrepresentable direct reference attributes' do
         expect { writer.call(document: document_with_reference_name, profile:) }
           .to raise_conformance_error_for('BT-14', code: :invalid_value)
+      end
+
+      it 'reports unrepresentable project reference attributes' do
+        expect { writer.call(document: document_with_project_reference_attributes, profile:) }
+          .to raise_conformance_error_for('BT-11', code: :invalid_value)
       end
 
       it 'reports a net price discount' do
@@ -219,9 +228,19 @@ RSpec.describe Facturx::Writer do
           .to raise_unrepresentable_attribute('BG-30', :tax_breakdown, :tax_amount)
       end
 
+      it 'reports a line allowance tax' do
+        expect { writer.call(document: document_with_line_allowance_tax, profile:) }
+          .to raise_unrepresentable_attribute('BG-27', :tax_breakdown, :category_code)
+      end
+
       it 'reports a VAT point date without a tax breakdown' do
         expect { writer.call(document: document_without_tax_breakdowns, profile:) }
           .to raise_unrepresentable_attribute('BG-23', :document, :vat_point_date)
+      end
+
+      it 'reports a VAT point date code without a tax breakdown' do
+        expect { writer.call(document: document_without_tax_breakdowns, profile:) }
+          .to raise_unrepresentable_attribute('BG-23', :document, :vat_point_date_code)
       end
     end
   end
@@ -329,8 +348,17 @@ RSpec.describe Facturx::Writer do
     document.with(delivery: document.delivery.with(party:))
   end
 
+  def document_with_ship_to_location
+    document.with(delivery: document.delivery.with(party: nil))
+  end
+
   def document_with_reference_name
     document.with(sales_order_reference: document.sales_order_reference.with(name: 'Order'))
+  end
+
+  def document_with_project_reference_attributes
+    reference = document.project_reference.with(line_id: '1', issue_date: Date.new(2026, 9, 1))
+    document.with(project_reference: reference)
   end
 
   def document_with_net_discount
@@ -347,6 +375,13 @@ RSpec.describe Facturx::Writer do
   def document_with_line_tax_amount
     tax = document.lines.first.tax.with(tax_amount: BigDecimal('5'))
     line = document.lines.first.with(tax:)
+    document.with(lines: [line])
+  end
+
+  def document_with_line_allowance_tax
+    tax = Facturx::TaxBreakdown.new(category_code: 'S', rate: BigDecimal('20'))
+    allowance = document.lines.first.allowances.first.with(tax:)
+    line = document.lines.first.with(allowances: [allowance])
     document.with(lines: [line])
   end
 

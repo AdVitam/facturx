@@ -13,7 +13,7 @@ module Facturx
           return unless accepted
 
           values.each do |item|
-            report_unrepresentable_attributes(group.id, item, represented_attributes:)
+            report_unrepresentable_attributes(group.id, item, model: group.model, represented_attributes:) if group.attribute
             node = context.element(parent, element)
             yield(node, item)
             remove_if_empty(node)
@@ -60,9 +60,7 @@ module Facturx
         end
 
         def attribute_supported_in_group?(group, model, attribute)
-          return true if group.model == :document && document_attribute?(model, attribute)
-
-          supported_term?(group, model, attribute) || supported_child_group?(group, attribute)
+          Terms.all.any? { |term| term.group_id == group.id && term.model == model && term.attribute == attribute }
         end
 
         def unrepresentable_attribute?(group, model, attribute, value, represented_attributes)
@@ -72,34 +70,6 @@ module Facturx
 
         def populated?(value)
           !value.nil? && (!value.respond_to?(:empty?) || !value.empty?)
-        end
-
-        def supported_term?(group, model, attribute)
-          group_ids(group).any? do |group_id|
-            Terms.all.any? { |term| term.group_id == group_id && term.model == model && term.attribute == attribute }
-          end
-        end
-
-        def supported_child_group?(group, attribute)
-          group_ids(group).any? do |group_id|
-            Terms.groups.any? { |candidate| candidate.parent_id == group_id && candidate.attribute == attribute }
-          end
-        end
-
-        def group_ids(group)
-          [group.id, group.parent_id].compact
-        end
-
-        def document_attribute?(model, attribute)
-          model == :document && (document_term?(attribute) || document_group?(attribute))
-        end
-
-        def document_term?(attribute)
-          Terms.all.any? { |term| term.model == :document && term.attribute == attribute }
-        end
-
-        def document_group?(attribute)
-          Terms.groups.any? { |candidate| candidate.attribute == attribute }
         end
 
         def model_for(item)

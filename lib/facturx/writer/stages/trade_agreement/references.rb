@@ -83,6 +83,8 @@ module Facturx
               return
             end
 
+            report_unrepresentable_reference_attributes('BT-11', value, represented_attributes: [:name])
+
             return unrepresentable('BT-11', 'Project reference requires an identifier') unless value.id
 
             container(parent, 'ram:SpecifiedProcuringProject') do |node|
