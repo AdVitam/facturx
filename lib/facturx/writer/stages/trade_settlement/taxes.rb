@@ -22,11 +22,14 @@ module Facturx
         def taxes(parent)
           first = true
           each_group('BG-23', document.tax_breakdowns, element: 'ram:ApplicableTradeTax', parent:,
-                                            represented_attributes: [:type_code]) do |node, item|
+                                                       represented_attributes: [:type_code]) do |node, item|
             emit_tax(node, item, include_tax_point: first)
             first = false
           end
-          report_unrepresentable_attribute('BG-23', model: :document, attribute: :vat_point_date) if first && document.vat_point_date
+          return unless first && document.vat_point_date
+
+          report_unrepresentable_attribute('BG-23', model: :document,
+                                                    attribute: :vat_point_date)
         end
 
         def emit_tax(parent, tax, include_tax_point:)
@@ -62,7 +65,7 @@ module Facturx
         def adjustments(parent, values, group_id, indicator)
           ids = ADJUSTMENT_IDS.fetch(indicator)
           each_group(group_id, values, element: 'ram:SpecifiedTradeAllowanceCharge', parent:,
-                                     represented_attributes: [:indicator]) do |node, item|
+                                       represented_attributes: [:indicator]) do |node, item|
             emit_adjustment(node, item, group_id, indicator, ids)
           end
         end

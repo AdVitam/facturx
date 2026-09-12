@@ -23,7 +23,9 @@ module Facturx
         def call
           each_group('BG-25', document.lines, element: 'ram:IncludedSupplyChainTradeLineItem',
                                               parent: context.transaction,
-                                              represented_attributes: %i[gross_price net_price buyer_order_reference]) do |node, line|
+                                              represented_attributes: %i[
+                                                gross_price net_price buyer_order_reference
+                                              ]) do |node, line|
             line_document(node, line)
             @product.call(parent: node, value: line.product)
             @agreement.call(parent: node, line:)

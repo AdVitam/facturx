@@ -9,7 +9,7 @@ module Facturx
         def payment_means(parent, payment)
           value = payment if payment_means_present?(payment)
           within_group('BG-16', value, element: 'ram:SpecifiedTradeSettlementPaymentMeans', parent:,
-                                     represented_attributes: %i[remittance_information direct_debit]) do |node, item|
+                                       represented_attributes: %i[remittance_information direct_debit]) do |node, item|
             emit_payment_means(parent, node, item)
           end
         end

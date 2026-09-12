@@ -49,8 +49,7 @@ module Facturx
           group = Terms.group(group_id)
           item.members.each do |attribute|
             value = item.public_send(attribute)
-            next if value.nil? || (value.respond_to?(:empty?) && value.empty?) || represented_attributes.include?(attribute)
-            next if attribute_supported_in_group?(group, model, attribute)
+            next unless unrepresentable_attribute?(group, model, attribute, value, represented_attributes)
 
             tracker.unrepresentable_attribute(group, model:, attribute:)
           end
@@ -63,21 +62,44 @@ module Facturx
         def attribute_supported_in_group?(group, model, attribute)
           return true if group.model == :document && document_attribute?(model, attribute)
 
-          Terms.all.any? { |term| term.group_id == group.id && term.model == model && term.attribute == attribute } ||
-            group.parent_id && Terms.all.any? do |term|
-              term.group_id == group.parent_id && term.model == model && term.attribute == attribute
-            end ||
-            Terms.groups.any? do |candidate|
-              candidate.parent_id == group.id && candidate.attribute == attribute
-            end ||
-            Terms.groups.any? do |candidate|
-              candidate.parent_id == group.parent_id && candidate.attribute == attribute
-            end
+          supported_term?(group, model, attribute) || supported_child_group?(group, attribute)
+        end
+
+        def unrepresentable_attribute?(group, model, attribute, value, represented_attributes)
+          populated?(value) && !represented_attributes.include?(attribute) &&
+            !attribute_supported_in_group?(group, model, attribute)
+        end
+
+        def populated?(value)
+          !value.nil? && (!value.respond_to?(:empty?) || !value.empty?)
+        end
+
+        def supported_term?(group, model, attribute)
+          group_ids(group).any? do |group_id|
+            Terms.all.any? { |term| term.group_id == group_id && term.model == model && term.attribute == attribute }
+          end
+        end
+
+        def supported_child_group?(group, attribute)
+          group_ids(group).any? do |group_id|
+            Terms.groups.any? { |candidate| candidate.parent_id == group_id && candidate.attribute == attribute }
+          end
+        end
+
+        def group_ids(group)
+          [group.id, group.parent_id].compact
         end
 
         def document_attribute?(model, attribute)
-          model == :document && (Terms.all.any? { |term| term.model == model && term.attribute == attribute } ||
-            Terms.groups.any? { |candidate| candidate.attribute == attribute })
+          model == :document && (document_term?(attribute) || document_group?(attribute))
+        end
+
+        def document_term?(attribute)
+          Terms.all.any? { |term| term.model == :document && term.attribute == attribute }
+        end
+
+        def document_group?(attribute)
+          Terms.groups.any? { |candidate| candidate.attribute == attribute }
         end
 
         def model_for(item)
