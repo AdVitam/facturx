@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require_relative 'pdf/support/pdf_builder'
+require_relative 'facturx/writer/support/document_factory'
 
 RSpec.describe Facturx do
   include PdfSupport
@@ -29,8 +30,19 @@ RSpec.describe Facturx do
 
   it 'validates and writes documents through the public facade' do
     report = described_class.validate_document(document: minimum_document, profile: :minimum)
-    xml_output = described_class.build_xml(minimum_document, profile: :minimum)
+    xml_output = described_class.build_xml(document: minimum_document, profile: :minimum)
     expect([report.valid?, xml_output.include?(Facturx::Profiles.fetch(:minimum).guideline_urn)]).to eq([true, true])
+  end
+
+  it 'reports unrepresentable optional values through the public facade' do
+    profile = Facturx::Profiles.fetch(:en16931)
+    document = WriterDocumentFactory.complete_document(profile)
+      .with(project_reference: Facturx::DocumentReference.new(name: 'Project'))
+
+    expect { described_class.build_xml(document:, profile:) }
+      .to raise_error(Facturx::ConformanceError) do |error|
+        expect(error.details.fetch(:report).issues).to include(have_attributes(term_id: 'BT-11'))
+      end
   end
 
   it 'delegates PDF generation through the public facade' do

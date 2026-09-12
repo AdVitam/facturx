@@ -85,11 +85,10 @@ module Facturx
           end
 
           def accounting_reference(parent, id, value)
-            raw = value.respond_to?(:value) ? value.value : value
-            return observe(id, nil) unless raw
+            return observe(id, nil) unless value
 
             container(parent, 'ram:ReceivableSpecifiedTradeAccountingAccount') do |node|
-              emit(id, raw, element: 'ram:ID', parent: node)
+              emit(id, value, element: 'ram:ID', parent: node)
             end
           end
         end

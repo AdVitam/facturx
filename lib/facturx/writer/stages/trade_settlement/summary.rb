@@ -66,14 +66,6 @@ module Facturx
           end
         end
 
-        def emit_date(parent, id, value, wrapper:, value_element: 'udt:DateTimeString')
-          return observe(id, nil) unless value
-
-          container(parent, wrapper) do |node|
-            emit(id, value, element: value_element, parent: node, attributes: { 'format' => '102' })
-          end
-        end
-
         def accounting_reference(parent)
           value = document.buyer_accounting_reference
           return observe('BT-19', nil) unless value

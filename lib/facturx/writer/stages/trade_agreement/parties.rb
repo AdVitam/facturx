@@ -64,21 +64,21 @@ module Facturx
             end
           end
 
-          def legal_organization(parent, party, value_id, scheme_id, trading_name_id: nil)
+          def legal_organization(parent, party, value_id, scheme_id, trading_name_id:)
             legal = party.legal_registration
             trading = party.trading_name
             return observe_missing_legal_organization(value_id, scheme_id, trading_name_id) unless legal || trading
 
             container(parent, 'ram:SpecifiedLegalOrganization') do |node|
               emit_compound_identifier(node, legal, value_id:, scheme_id:, element: 'ram:ID')
-              emit(trading_name_id, trading, element: 'ram:TradingBusinessName', parent: node) if trading_name_id
+              emit(trading_name_id, trading, element: 'ram:TradingBusinessName', parent: node)
             end
           end
 
           def observe_missing_legal_organization(value_id, scheme_id, trading_name_id)
             observe(value_id, nil)
             observe(scheme_id, nil, group_present: false)
-            observe(trading_name_id, nil) if trading_name_id
+            observe(trading_name_id, nil)
             nil
           end
 

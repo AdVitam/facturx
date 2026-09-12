@@ -42,7 +42,7 @@ module Facturx
     def validate_document(document:, profile:); end
 
     sig { params(document: Facturx::Document, profile: T.any(Symbol, Facturx::Profile)).returns(String) }
-    def build_xml(document, profile:); end
+    def build_xml(document:, profile:); end
 
     sig do
       params(pdf: String, document: Facturx::Document, profile: T.any(Symbol, Facturx::Profile))

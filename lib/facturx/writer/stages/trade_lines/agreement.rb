@@ -36,6 +36,7 @@ module Facturx
           def price(parent, value, kind:)
             config = PRICES.fetch(kind)
             return observe_missing_price(config, kind:) unless value
+            return unrepresentable(config.fetch(:ids).first, 'Price requires an amount') unless value.amount
 
             container(parent, config.fetch(:element)) do |node|
               emit_price(node, value, config.fetch(:ids))

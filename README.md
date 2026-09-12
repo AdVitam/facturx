@@ -64,7 +64,7 @@ end
 report = Facturx.validate_document(document:, profile: :minimum)
 report.valid?
 
-xml = Facturx.build_xml(document, profile: :minimum)
+xml = Facturx.build_xml(document:, profile: :minimum)
 facturx_pdf = Facturx.generate(pdf:, document:, profile: :minimum)
 ```
 

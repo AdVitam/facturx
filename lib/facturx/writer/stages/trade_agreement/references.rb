@@ -88,6 +88,8 @@ module Facturx
               return
             end
 
+            return unrepresentable('BT-11', 'Project reference requires an identifier') unless value.id
+
             container(parent, 'ram:SpecifiedProcuringProject') do |node|
               emit('BT-11', value.id, element: 'ram:ID', parent: node)
               technical(node, 'ram:Name', value.name)

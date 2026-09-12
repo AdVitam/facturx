@@ -133,26 +133,17 @@ module Facturx
         check_guideline(document.guideline_urn, path:)
       end
 
-      def group_observed?(group, count:, path: nil, group_present: true)
+      def observe_group(group, count:, path: nil, group_present: true)
         validate_count!(count)
         return false unless group_present
 
         definition_observed?(group, count, path)
       end
-      alias observe_group group_observed?
-
-      def within_group(group, count:, path: nil, group_present: true)
-        present = observe_group(group, count:, path:, group_present:)
-        yield if present && block_given?
-        present
-      end
-
-      def term_observed?(term, value: UNSET, values: UNSET, path: nil, group_present: true)
+      def observe_term(term, value: UNSET, values: UNSET, path: nil, group_present: true)
         return false unless group_present
 
         definition_observed?(term, value_count(observed_value(value, values)), path)
       end
-      alias observe_term term_observed?
 
       def invalid_term(term, error:, path: nil)
         raise TypeError, 'error must be a FormattingError' unless error.is_a?(FormattingError)
@@ -169,18 +160,6 @@ module Facturx
 
       def report
         Report.new(profile:, issues: @issues)
-      end
-
-      def raise_if_invalid!
-        current_report = report
-        return current_report if current_report.valid?
-
-        raise ConformanceError.new(
-          'Document does not conform to the selected profile',
-          profile: profile.id,
-          issues: current_report.issues,
-          report: current_report
-        )
       end
 
       private

@@ -80,20 +80,12 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
     end
 
     it 'does not cascade into children of missing or forbidden groups' do
-      results = [tracker.within_group(required_group, count: 0) { raise 'unexpected descent' },
-                 tracker.within_group(forbidden_group, count: 1) { raise 'unexpected descent' }]
+      results = [tracker.observe_group(required_group, count: 0),
+                 tracker.observe_group(forbidden_group, count: 1)]
       tracker.observe_term(required_term, value: nil, group_present: false)
 
       expect([*results, tracker.report.issues.map(&:code)])
         .to eq([false, false, %i[missing_required_group forbidden_group]])
-    end
-
-    it 'descends into an allowed present group' do
-      yielded = false
-
-      result = tracker.within_group(optional_group, count: 1) { yielded = true }
-
-      expect([result, yielded]).to eq([true, true])
     end
 
     it 'turns formatting failures into invalid-value issues' do
@@ -104,13 +96,6 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
       )
     end
 
-    it 'raises one aggregate error only after observation is complete' do
-      tracker.observe_term(required_term, value: nil)
-
-      expect { tracker.raise_if_invalid! }.to raise_error(Facturx::ConformanceError) do |error|
-        expect([error.details[:profile], error.details[:report].invalid?]).to eq([:en16931, true])
-      end
-    end
   end
 
   def term(id, cardinality)

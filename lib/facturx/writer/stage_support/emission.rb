@@ -39,6 +39,11 @@ module Facturx
           tracker.observe_term(term, values: present_values(value), path: term.xpath, group_present:)
         end
 
+        def unrepresentable(id, message)
+          term = Terms.fetch(id)
+          tracker.invalid_term(term, error: FormattingError.new(message, path: term.xpath), path: term.xpath)
+        end
+
         def present_values(value)
           (value.is_a?(Array) ? value : [value]).compact
         end

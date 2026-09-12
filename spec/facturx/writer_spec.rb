@@ -138,6 +138,30 @@ RSpec.describe Facturx::Writer do
         expect(parsed.at_xpath('//ram:SpecifiedProcuringProject', Facturx::Xml::Namespaces::MAP)).to be_nil
       end
     end
+
+    context 'with unrepresentable optional values' do
+      let(:profile) { Facturx::Profiles.fetch(:en16931) }
+      let(:document) { WriterDocumentFactory.complete_document(profile) }
+
+      it 'reports a project reference without an identifier before XSD validation' do
+        invalid_document = document.with(project_reference: Facturx::DocumentReference.new(name: 'Project'))
+
+        expect { writer.call(document: invalid_document, profile:) }
+          .to raise_error(Facturx::ConformanceError) do |error|
+            expect(error.details.fetch(:report).issues).to include(have_attributes(term_id: 'BT-11'))
+          end
+      end
+
+      it 'reports a gross price without an amount before XSD validation' do
+        line = document.lines.first.with(gross_price: Facturx::Price.new(basis_quantity: document.lines.first.quantity))
+        invalid_document = document.with(lines: [line])
+
+        expect { writer.call(document: invalid_document, profile:) }
+          .to raise_error(Facturx::ConformanceError) do |error|
+            expect(error.details.fetch(:report).issues).to include(have_attributes(term_id: 'BT-148'))
+          end
+      end
+    end
   end
 
   describe '#validate' do

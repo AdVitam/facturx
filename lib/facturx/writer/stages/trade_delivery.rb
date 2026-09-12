@@ -23,7 +23,7 @@ module Facturx
         def delivery_accepted?(value)
           group = Terms.group('BG-13-00')
           accepted = tracker.observe_group(group, count: value ? 1 : 0, path: group.xpath)
-          accepted && !value.nil?
+          accepted
         end
 
         def references(parent)

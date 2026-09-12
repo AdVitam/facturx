@@ -11,7 +11,6 @@ module Facturx
           values = present_values(value)
           accepted = tracker.observe_group(group, count: values.size, path: group.xpath)
           return unless accepted
-          return if values.empty?
 
           values.each do |item|
             node = context.element(parent, element)

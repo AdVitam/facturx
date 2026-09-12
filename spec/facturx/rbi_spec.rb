@@ -33,7 +33,7 @@ RSpec.describe Facturx::Rbi do
   end
 
   def missing_writer_declarations
-    ['def validate_document(document:, profile:); end', 'def build_xml(document, profile:); end',
+    ['def validate_document(document:, profile:); end', 'def build_xml(document:, profile:); end',
      'def generate(pdf:, document:, profile:); end', 'class ConformanceError < Error; end',
      'class Issue', 'class Report'].reject { |declaration| source.include?(declaration) }
   end

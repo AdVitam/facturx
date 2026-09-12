@@ -64,7 +64,7 @@ module Facturx
       DEFAULT_WRITER.validate(document:, profile: canonical_profile)
     end
 
-    def build_xml(document, profile:)
+    def build_xml(document:, profile:)
       canonical_profile = DEFAULT_PROFILE_RESOLVER.call(profile)
       DEFAULT_WRITER.call(document:, profile: canonical_profile)
     end

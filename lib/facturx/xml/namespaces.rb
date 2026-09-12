@@ -14,8 +14,6 @@ module Facturx
         'rsm' => CII,
         'udt' => UNQUALIFIED
       }.freeze
-
-      ROOT_ATTRIBUTES = MAP.to_h { |prefix, uri| ["xmlns:#{prefix}", uri] }.freeze
     end
   end
 end
