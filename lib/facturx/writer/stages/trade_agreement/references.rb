@@ -92,7 +92,7 @@ module Facturx
 
             container(parent, 'ram:SpecifiedProcuringProject') do |node|
               emit('BT-11', value.id, element: 'ram:ID', parent: node)
-              technical(node, 'ram:Name', value.name)
+              technical(node, 'ram:Name', value.name || value.id)
             end
           end
         end

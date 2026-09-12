@@ -161,6 +161,13 @@ RSpec.describe Facturx::Writer do
             expect(error.details.fetch(:report).issues).to include(have_attributes(term_id: 'BT-148'))
           end
       end
+
+      it 'uses the identifier as a project name when no name is supplied' do
+        id_only_document = document.with(project_reference: Facturx::DocumentReference.new(id: 'PROJECT'))
+
+        expect(Facturx::Reader.new.call(writer.call(document: id_only_document, profile:)).document.project_reference)
+          .to have_attributes(id: 'PROJECT', name: 'PROJECT')
+      end
     end
   end
 
