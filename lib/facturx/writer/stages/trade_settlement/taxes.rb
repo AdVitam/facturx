@@ -61,7 +61,8 @@ module Facturx
 
         def adjustments(parent, values, group_id, indicator)
           ids = ADJUSTMENT_IDS.fetch(indicator)
-          each_group(group_id, values, element: 'ram:SpecifiedTradeAllowanceCharge', parent:) do |node, item|
+          each_group(group_id, values, element: 'ram:SpecifiedTradeAllowanceCharge', parent:,
+                                     represented_attributes: [:indicator]) do |node, item|
             emit_adjustment(node, item, group_id, indicator, ids)
           end
         end

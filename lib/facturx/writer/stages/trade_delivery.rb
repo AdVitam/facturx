@@ -52,7 +52,8 @@ module Facturx
           party = delivery.party
           location = delivery.location_identifier
           present = party || location
-          within_group('BG-13', present, element: 'ram:ShipToTradeParty', parent:) do |node,|
+          within_group('BG-13', present, element: 'ram:ShipToTradeParty', parent:,
+                                     represented_attributes: [:name]) do |node,|
             delivery_identifier(node, location)
             emit('BT-70', party&.name, element: 'ram:Name', parent: node)
             emit_address(node, party&.address, 'BG-15', ADDRESS_IDS)

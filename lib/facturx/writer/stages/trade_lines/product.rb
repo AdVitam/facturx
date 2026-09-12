@@ -6,7 +6,8 @@ module Facturx
       class TradeLines
         class Product < Stage
           def call(parent:, value:)
-            within_group('BG-31', value, element: 'ram:SpecifiedTradeProduct', parent:) do |node, item|
+            within_group('BG-31', value, element: 'ram:SpecifiedTradeProduct', parent:,
+                                       represented_attributes: [:classifications]) do |node, item|
               identifiers(node, item)
               emit('BT-153', item.name, element: 'ram:Name', parent: node)
               emit('BT-154', item.description, element: 'ram:Description', parent: node)

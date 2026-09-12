@@ -48,7 +48,8 @@ module Facturx
 
           group = Terms.group(group_id)
           item.members.each do |attribute|
-            next if item.public_send(attribute).nil? || represented_attributes.include?(attribute)
+            value = item.public_send(attribute)
+            next if value.nil? || (value.respond_to?(:empty?) && value.empty?) || represented_attributes.include?(attribute)
             next if attribute_supported_in_group?(group, model, attribute)
 
             tracker.unrepresentable_attribute(group, model:, attribute:)

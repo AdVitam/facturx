@@ -7,7 +7,8 @@ module Facturx
         term_ids 'BT-23', 'BT-24'
 
         def call
-          within_group('BG-2', document, element: 'rsm:ExchangedDocumentContext', parent: context.root) do |node,|
+          within_group('BG-2', document, element: 'rsm:ExchangedDocumentContext', parent: context.root,
+                                         represented_attributes: [:vat_point_date_code]) do |node,|
             emit_context_parameter(node, 'BT-23', document.business_process,
                                    'ram:BusinessProcessSpecifiedDocumentContextParameter')
             guideline = document.guideline_urn || profile.guideline_urn
