@@ -9,7 +9,6 @@ module Facturx
         nodes = group_nodes('BG-16')
         return if nodes.empty?
 
-        diagnose_multiple_payments(nodes)
         node = nodes.first
         base = group_xpath('BG-16')
         PaymentInstructions.new(**payment_attributes(node, base))
@@ -23,13 +22,6 @@ module Facturx
           payment_card: payment_card(node, base),
           direct_debit: direct_debit
         )
-      end
-
-      def diagnose_multiple_payments(nodes)
-        return unless nodes.size > 1
-
-        @terms.add(:multiple_values, 'BG-16', group_xpath('BG-16'),
-                   'Multiple payment instructions cannot fit the EN16931 model', count: nodes.size)
       end
 
       def credit_transfers(parent, parent_base)

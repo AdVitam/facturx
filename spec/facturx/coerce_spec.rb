@@ -6,7 +6,7 @@ require 'facturx/coerce'
 RSpec.describe Facturx::Coerce do
   describe '.call' do
     it 'preserves nil values' do
-      expect(described_class.call(nil, type: :amount)).to be_nil
+      expect(described_class.call(nil, type: :decimal)).to be_nil
     end
 
     it 'copies and freezes strings' do
@@ -17,17 +17,12 @@ RSpec.describe Facturx::Coerce do
       expect([output, output.frozen?]).to eq(['invoice', true])
     end
 
-    it 'coerces Factur-X format 102 dates through both accepted type names' do
-      dates = [
-        described_class.call('20260912', type: described_class::DATE_FORMAT),
-        described_class.call('20260912', type: :date)
-      ]
-
-      expect(dates).to eq([Date.new(2026, 9, 12), Date.new(2026, 9, 12)])
+    it 'coerces Factur-X format 102 dates' do
+      expect(described_class.call('20260912', type: :date_102)).to eq(Date.new(2026, 9, 12))
     end
 
     it 'coerces decimal types without losing precision' do
-      value = described_class.call('1234.5678', type: :amount)
+      value = described_class.call('1234.5678', type: :decimal)
 
       expect([value.class, value.to_s('F')]).to eq([BigDecimal, '1234.5678'])
     end
@@ -44,30 +39,16 @@ RSpec.describe Facturx::Coerce do
       expect([output, output.encoding, output.frozen?]).to eq(["\x00\xFF".b, Encoding::BINARY, true])
     end
 
-    it 'builds identifiers with their scheme' do
-      identifier = described_class.call('123456789', type: :identifier, scheme_id: '0002')
-
-      expect(identifier).to eq(Facturx::Identifier.new(value: '123456789', scheme_id: '0002'))
-    end
-
-    it 'coerces integers strictly' do
-      expect(described_class.call('42', type: :integer)).to eq(42)
-    end
-
-    it 'rejects non-integer numbers' do
-      expect { described_class.call('42.0', type: :integer) }.to raise_error(Facturx::CoercionError)
-    end
-
     context 'with invalid data' do
       subject(:error) do
-        described_class.call('31/12/2026', type: described_class::DATE_FORMAT,
+        described_class.call('31/12/2026', type: :date_102,
                                            term_id: :'BT-2', path: '/invoice/date')
       rescue Facturx::CoercionError => e
         e
       end
 
       it 'reports structured context' do
-        expected = { value: '31/12/2026', type: described_class::DATE_FORMAT, scale: nil,
+        expected = { value: '31/12/2026', type: :date_102, scale: nil,
                      term_id: :'BT-2', path: '/invoice/date' }
 
         expect([error.details, error.cause.class]).to eq([expected, ArgumentError])
@@ -75,7 +56,7 @@ RSpec.describe Facturx::Coerce do
     end
 
     it 'rejects floats rather than silently converting them' do
-      expect { described_class.call(12.3, type: :amount) }
+      expect { described_class.call(12.3, type: :decimal) }
         .to raise_error(Facturx::CoercionError, 'Value cannot be coerced')
     end
 

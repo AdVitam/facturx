@@ -23,10 +23,15 @@ module Facturx
       end
 
       def scalar_document_attributes
-        attributes = [nil, 'BG-2', 'BG-19', 'BG-23'].each_with_object({}) do |group_id, result|
+        attributes = [nil, 'BG-2', 'BG-19'].each_with_object({}) do |group_id, result|
           result.merge!(scalar_attributes(:document, group_id, except: DOCUMENT_COMPOSITE_ATTRIBUTES))
         end
-        attributes.merge(vat_point_date_code: value('BT-8'))
+        tax_breakdown = first_group('BG-23')
+        return attributes unless tax_breakdown
+
+        base = group_xpath('BG-23')
+        attributes.merge!(scalar_attributes(:document, 'BG-23', context: tax_breakdown, base_xpath: base))
+        attributes.merge(vat_point_date_code: value('BT-8', context: tax_breakdown, base_xpath: base))
       end
 
       def reference_document_attributes

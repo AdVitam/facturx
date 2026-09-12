@@ -3,11 +3,16 @@
 module Facturx
   class Reader
     class SemanticMapper
+      EMPTY_TERMS = [].freeze
+
       def initialize(document:, profile:, registry:, coercer:, diagnostics:)
         @document = document
         @profile = profile
         @terms = TermReader.new(document:, profile:, registry:, coercer:, diagnostics:)
         @registry = registry
+        active_terms = registry.for_profile(profile)
+        @terms_by_model_and_group = active_terms.group_by { |term| [term.model, term.group_id] }.freeze
+        @terms_by_model_and_attribute = active_terms.group_by { |term| [term.model, term.attribute] }.freeze
       end
 
       def call

@@ -79,7 +79,7 @@ module Facturx
       end
 
       def model_terms(model, group_id)
-        @registry.for_profile(@profile).select { |term| term.model == model && term.group_id == group_id }
+        @terms_by_model_and_group.fetch([model, group_id], EMPTY_TERMS)
       end
 
       def term_for(model, group_id, attribute, xpath_suffix: nil)
@@ -88,7 +88,7 @@ module Facturx
       end
 
       def term_for_attribute(model, attribute, xpath_suffix: nil)
-        terms = @registry.for_profile(@profile).select { |term| term.model == model && term.attribute == attribute }
+        terms = @terms_by_model_and_attribute.fetch([model, attribute], EMPTY_TERMS)
         terms.find { |term| xpath_suffix.nil? || term.xpath.end_with?(xpath_suffix) }
       end
 
@@ -101,33 +101,7 @@ module Facturx
       end
 
       def group_xpath(id)
-        @registry.groups.find { |group| group.id == id }.xpath
-      end
-
-      def bt(number, suffix = nil)
-        return unless number
-
-        "BT-#{number}#{"-#{suffix}" if suffix}"
-      end
-
-      def allowance_term_ids(group_id)
-        line = group_id == 'BG-27'
-        values = line ? %w[136 137 138 139 140] : %w[92 93 94 97 98 95 96]
-        allowance_ids(values, group_id)
-      end
-
-      def charge_term_ids(group_id)
-        line = group_id == 'BG-28'
-        values = line ? %w[141 142 143 144 145] : %w[99 100 101 104 105 102 103]
-        allowance_ids(values, group_id)
-      end
-
-      def allowance_ids(values, group_id)
-        {
-          amount: bt(values[0]), base_amount: bt(values[1]), percentage: bt(values[2]),
-          reason: bt(values[3]), reason_code: bt(values[4]), tax_category: bt(values[5]), tax_rate: bt(values[6]),
-          group_id:
-        }
+        @registry.group(id).xpath
       end
     end
   end

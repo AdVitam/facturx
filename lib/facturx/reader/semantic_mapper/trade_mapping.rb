@@ -16,20 +16,23 @@ module Facturx
       def allowance_charges(group_id, charge:, context: @document, base_xpath: nil)
         group_nodes(group_id, context:, base_xpath:) { |node| charge_indicator(node, group_id) == charge }.map do |node|
           base = group_xpath(group_id)
-          ids = charge ? charge_term_ids(group_id) : allowance_term_ids(group_id)
-          AllowanceCharge.new(**allowance_attributes(node, base, ids), indicator: charge,
-                                                                       tax: allowance_tax(node, base, ids))
+          AllowanceCharge.new(**allowance_attributes(node, base, group_id), indicator: charge,
+                                                                            tax: allowance_tax(node, base, group_id))
         end
       end
 
-      def allowance_attributes(node, base, ids)
-        scalar_attributes(:allowance_charge, ids.fetch(:group_id), context: node, base_xpath: base, except: [:tax])
+      def allowance_attributes(node, base, group_id)
+        scalar_attributes(:allowance_charge, group_id, context: node, base_xpath: base, except: [:tax])
       end
 
-      def allowance_tax(node, base, ids)
+      def allowance_tax(node, base, group_id)
         technical_value('./ram:CategoryTradeTax/ram:TypeCode', node)
-        category = value(ids[:tax_category], context: node, base_xpath: base)
-        rate = value(ids[:tax_rate], context: node, base_xpath: base)
+        category = value(term_for(:allowance_charge, group_id, :tax,
+                                  xpath_suffix: '/ram:CategoryTradeTax/ram:CategoryCode')&.id,
+                         context: node, base_xpath: base)
+        rate = value(term_for(:allowance_charge, group_id, :tax,
+                              xpath_suffix: '/ram:CategoryTradeTax/ram:RateApplicablePercent')&.id,
+                     context: node, base_xpath: base)
         TaxBreakdown.new(category_code: category, rate:) if category || rate
       end
 

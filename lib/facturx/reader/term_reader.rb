@@ -70,10 +70,11 @@ module Facturx
       end
 
       def active_group(id)
-        group = @registry.groups.find { |candidate| candidate.id == id }
-        raise KeyError, "Unknown Factur-X group: #{id}" unless group
+        group = @registry.group(id)
 
         group if group.cardinalities.key?(@profile.id)
+      rescue KeyError
+        raise KeyError, "Unknown Factur-X group: #{id}"
       end
 
       def diagnose_cardinality(definition, nodes, cardinality)

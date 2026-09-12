@@ -37,6 +37,11 @@ RSpec.describe Facturx::Terms do
     expect(differences).to all(be_empty)
   end
 
+  it 'uses immutable profile and group indexes' do
+    expect([described_class.for_profile(:en16931), described_class.groups_for_profile(:en16931),
+            described_class.group('BG-23')]).to eq(index_entries)
+  end
+
   it 'uses compilable namespace-aware XPath expressions' do
     expect do
       (registry.all + registry.groups).each { |entry| empty_cii_xml.xpath(entry.xpath, namespaces) }
@@ -54,6 +59,11 @@ RSpec.describe Facturx::Terms do
 
   def model_for(name)
     Facturx.const_get(name.to_s.split('_').map(&:capitalize).join)
+  end
+
+  def index_entries
+    [described_class::TERMS_BY_PROFILE[:en16931], described_class::GROUPS_BY_PROFILE[:en16931],
+     described_class::GROUPS_BY_ID['BG-23']]
   end
 
   def invalid_terms

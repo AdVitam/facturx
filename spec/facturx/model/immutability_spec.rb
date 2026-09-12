@@ -40,6 +40,12 @@ RSpec.describe Facturx::Model::Immutability do
     expect { Facturx::Document.new(unknown: true) }.to raise_error(ArgumentError, 'Unknown attributes: :unknown')
   end
 
+  it 'keeps value models limited to represented EN16931 terms' do
+    expect([Facturx::DocumentReference.members, Facturx::Delivery.members, Facturx::Contact.members]).to eq(
+      [%i[id line_id name issue_date], %i[location_identifier party date], %i[name telephone email]]
+    )
+  end
+
   it 'keeps collection invariants when deriving a value with Data#with' do
     original = Facturx::Document.new(invoice_number: 'INV-1')
     derived = original.with(invoice_number: 'INV-2')

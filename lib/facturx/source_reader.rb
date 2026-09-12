@@ -24,7 +24,7 @@ module Facturx
     private
 
     def pdf?(bytes)
-      bytes.b.byteslice(0, 1024)&.include?('%PDF-'.b)
+      bytes.byteslice(0, 1024).b.include?('%PDF-'.b)
     end
   end
 end

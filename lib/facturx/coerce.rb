@@ -3,31 +3,17 @@
 require 'bigdecimal'
 require 'date'
 require_relative 'error'
-require_relative 'model/immutable'
-require_relative 'model/common'
 
 module Facturx
   class CoercionError < Error; end
 
   module Coerce
-    DATE_FORMAT = [:date, 102].join('_').to_sym
     CONVERTERS = {
       string: :string,
-      code: :string,
-      id: :string,
-      identifier: :identifier,
-      date: :formatted_date,
-      DATE_FORMAT => :formatted_date,
+      date_102: :formatted_date,
       decimal: :decimal,
-      amount: :decimal,
-      quantity: :decimal,
-      percentage: :decimal,
-      percent: :decimal,
       boolean: :boolean,
-      indicator: :boolean,
-      integer: :integer,
-      binary: :binary,
-      base64_binary: :binary
+      binary: :binary
     }.freeze
 
     module_function
@@ -49,10 +35,6 @@ module Facturx
       raise TypeError, 'expected a String' unless value.is_a?(String)
 
       value.dup.freeze
-    end
-
-    def identifier(value, context)
-      Identifier.new(value: string(value), scheme_id: context[:scheme_id])
     end
 
     def decimal(value, _context = nil)
@@ -82,12 +64,6 @@ module Facturx
       when 'false', '0' then false
       else raise ArgumentError, 'boolean must be true, false, 1, or 0'
       end
-    end
-
-    def integer(value, _context = nil)
-      return value if value.is_a?(Integer)
-
-      Integer(string(value), 10)
     end
 
     def binary(value, _context = nil)

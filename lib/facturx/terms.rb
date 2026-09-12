@@ -39,6 +39,12 @@ module Facturx
     GROUPS = TermDeclarations::GROUPS
     BY_ID = ALL.to_h { |term| [term.id, term] }.freeze
     GROUPS_BY_ID = GROUPS.to_h { |group| [group.id, group] }.freeze
+    TERMS_BY_PROFILE = PROFILE_TERM_COUNTS.keys.to_h do |profile_id|
+      [profile_id, ALL.select { |term| term.cardinalities.key?(profile_id) }.freeze]
+    end.freeze
+    GROUPS_BY_PROFILE = PROFILE_TERM_COUNTS.keys.to_h do |profile_id|
+      [profile_id, GROUPS.select { |group| group.cardinalities.key?(profile_id) }.freeze]
+    end.freeze
 
     module_function
 
@@ -54,14 +60,18 @@ module Facturx
       BY_ID.fetch(id.to_s)
     end
 
+    def group(id)
+      GROUPS_BY_ID.fetch(id.to_s)
+    end
+
     def for_profile(profile)
       profile_id = profile.respond_to?(:id) ? profile.id : profile.to_sym
-      ALL.select { |term| term.cardinalities.key?(profile_id) }.freeze
+      TERMS_BY_PROFILE.fetch(profile_id)
     end
 
     def groups_for_profile(profile)
       profile_id = profile.respond_to?(:id) ? profile.id : profile.to_sym
-      GROUPS.select { |group| group.cardinalities.key?(profile_id) }.freeze
+      GROUPS_BY_PROFILE.fetch(profile_id)
     end
 
     def validate!

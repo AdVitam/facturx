@@ -117,6 +117,20 @@ RSpec.describe Facturx::Reader do
                                Facturx::Identifier.new(value: 'GLOBAL', scheme_id: '0088')])
   end
 
+  it 'reads BT-7 and BT-8 from the first tax breakdown without scalar diagnostics' do
+    reading = reader.call(xml_with_two_tax_breakdowns)
+    expect([reading.document.vat_point_date, reading.document.vat_point_date_code,
+            vat_point_diagnostics?(reading.diagnostics)])
+      .to eq([Date.new(2023, 1, 1), '35', false])
+  end
+
+  it 'reports duplicate payment instructions once through BG-16' do
+    diagnostics = reader.call(xml_with_two_payment_instructions).diagnostics
+
+    expect(diagnostics.select { |diagnostic| diagnostic.code == :multiple_values && diagnostic.term_id == 'BG-16' })
+      .to have_attributes(size: 1)
+  end
+
   it 'reads a BASIC credit transfer without the EN16931-only provider identifier' do
     credit_transfer = reader.call(xml_with_basic_credit_transfer).document.payment.credit_transfers.first
     expect(credit_transfer).to have_attributes(
@@ -137,8 +151,17 @@ RSpec.describe Facturx::Reader do
 
   it 'partitions header allowances and charges through their boolean indicator' do
     document = reader.call(xml_with_adjustments).document
-    expect([document.allowances.map(&:amount), document.charges.map(&:amount)])
-      .to eq([[BigDecimal('5')], [BigDecimal('7')]])
+    tax = Facturx::TaxBreakdown.new(category_code: 'S', rate: BigDecimal('20'))
+    expect([[document.allowances.map(&:amount), document.charges.map(&:amount)],
+            [document.allowances.first.tax, document.charges.first.tax]])
+      .to eq([[[BigDecimal('5')], [BigDecimal('7')]], [tax, tax]])
+  end
+
+  it 'keeps line allowances and charges mapped when tax terms are absent from the registry' do
+    document = reader.call(xml_with_line_adjustments).document
+
+    expect([document.lines.first.allowances.first.amount, document.lines.first.charges.first.amount])
+      .to eq([BigDecimal('5'), BigDecimal('7')])
   end
 
   it 'diagnoses an invalid allowance indicator without misclassifying it' do
@@ -175,6 +198,13 @@ RSpec.describe Facturx::Reader do
     expect(Facturx::SourceReader.new.call(bytes).source_type).to eq(:xml)
   end
 
+  it 'sniffs PDF byte strings before normalizing their encoding' do
+    source = (+'%PDF-1.7\\n').force_encoding(Encoding::UTF_16LE)
+    extractor = instance_double(Facturx::Pdf::Extractor, call: extracted_result)
+
+    expect(Facturx::SourceReader.new(extractor:).call(source).source_type).to eq(:pdf)
+  end
+
   it 'rejects unsupported policies' do
     expect { reader.call(minimum_xml, on_unknown_profile: :ignore) }.to raise_error(ArgumentError)
   end
@@ -191,6 +221,10 @@ RSpec.describe Facturx::Reader do
     Facturx::Pdf::Extractor::Result.new(
       xml: complete_en16931_xml, filename: nil, relationship: nil, metadata: nil, page_count: 1
     )
+  end
+
+  def vat_point_diagnostics?(diagnostics)
+    diagnostics.any? { |item| item.code == :multiple_values && item.term_id.match?(/\ABT-[78]\z/) }
   end
 
   def defective_xml
@@ -232,6 +266,25 @@ RSpec.describe Facturx::Reader do
     complete_en16931_xml.sub('<ram:ApplicableHeaderTradeDelivery/>', delivery)
   end
 
+  def xml_with_two_tax_breakdowns
+    tax = lambda do |category|
+      '<ram:ApplicableTradeTax><ram:TypeCode>VAT</ram:TypeCode>' \
+        "<ram:CategoryCode>#{category}</ram:CategoryCode>" \
+        '<ram:TaxPointDate><udt:DateString format="102">20230101</udt:DateString></ram:TaxPointDate>' \
+        '<ram:DueDateTypeCode>35</ram:DueDateTypeCode></ram:ApplicableTradeTax>'
+    end
+    marker = "<ram:ApplicableTradeTax>\n                <ram:TypeCode>VAT</ram:TypeCode>\n                " \
+             "<ram:CategoryCode>S</ram:CategoryCode>\n            </ram:ApplicableTradeTax>"
+    en16931_xml.sub(marker, "#{tax.call('S')}#{tax.call('Z')}")
+  end
+
+  def xml_with_two_payment_instructions
+    payment = '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode>' \
+              '</ram:SpecifiedTradeSettlementPaymentMeans>'
+    marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
+    complete_en16931_xml.sub(marker, "#{marker}#{payment}#{payment}")
+  end
+
   def xml_with_references
     references = reference_xml('TENDER',
                                '50') + reference_xml('OBJECT', '130',
@@ -261,11 +314,26 @@ RSpec.describe Facturx::Reader do
     complete_en16931_xml.sub(marker, "#{marker}#{adjustments}")
   end
 
+  def xml_with_line_adjustments
+    adjustments = %w[false true].zip(%w[5 7]).map { |indicator, amount| line_adjustment_xml(indicator, amount) }.join
+    marker = '<ram:SpecifiedTradeSettlementLineMonetarySummation>'
+    en16931_xml.sub(marker, "#{adjustments}#{marker}")
+  end
+
   def adjustment_xml(indicator, amount)
     '<ram:SpecifiedTradeAllowanceCharge>' \
       "<ram:ChargeIndicator><udt:Indicator>#{indicator}</udt:Indicator></ram:ChargeIndicator>" \
       "<ram:ActualAmount>#{amount}</ram:ActualAmount>" \
       '<ram:CategoryTradeTax><ram:TypeCode>VAT</ram:TypeCode><ram:CategoryCode>S</ram:CategoryCode>' \
+      '<ram:RateApplicablePercent>20</ram:RateApplicablePercent></ram:CategoryTradeTax>' \
+      '</ram:SpecifiedTradeAllowanceCharge>'
+  end
+
+  def line_adjustment_xml(indicator, amount)
+    '<ram:SpecifiedTradeAllowanceCharge>' \
+      "<ram:ChargeIndicator><udt:Indicator>#{indicator}</udt:Indicator></ram:ChargeIndicator>" \
+      "<ram:ActualAmount>#{amount}</ram:ActualAmount>" \
+      '<ram:CategoryTradeTax><ram:CategoryCode>S</ram:CategoryCode>' \
       '<ram:RateApplicablePercent>20</ram:RateApplicablePercent></ram:CategoryTradeTax>' \
       '</ram:SpecifiedTradeAllowanceCharge>'
   end
