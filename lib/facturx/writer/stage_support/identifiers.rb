@@ -59,6 +59,20 @@ module Facturx
           end
         end
 
+        def emit_invoiced_object(parent, identifier, value_id, scheme_id)
+          unless identifier&.value
+            observe?(value_id, nil)
+            report_unrepresentable_identifier_scheme(scheme_id, identifier)
+            return
+          end
+
+          container(parent, 'ram:AdditionalReferencedDocument') do |node|
+            emit(value_id, identifier.value, element: 'ram:IssuerAssignedID', parent: node)
+            technical(node, 'ram:TypeCode', '130')
+            emit(scheme_id, identifier.scheme_id, element: 'ram:ReferenceTypeCode', parent: node)
+          end
+        end
+
         def report_unrepresentable_reference_attributes(id, reference, represented_attributes: [])
           %i[id line_id name issue_date].each do |attribute|
             next unless reference.public_send(attribute) && !represented_attributes.include?(attribute)

@@ -53,20 +53,7 @@ module Facturx
           end
 
           def invoiced_object_reference(parent)
-            item = document.invoiced_object_identifier
-            return observe_missing_invoiced_object unless item&.value
-
-            container(parent, 'ram:AdditionalReferencedDocument') do |node|
-              emit('BT-18', item.value, element: 'ram:IssuerAssignedID', parent: node)
-              technical(node, 'ram:TypeCode', '130')
-              emit('BT-18-1', item.scheme_id, element: 'ram:ReferenceTypeCode', parent: node)
-            end
-          end
-
-          def observe_missing_invoiced_object
-            observe?('BT-18', nil)
-            observe?('BT-18-1', nil, group_present: false)
-            nil
+            emit_invoiced_object(parent, document.invoiced_object_identifier, 'BT-18', 'BT-18-1')
           end
 
           def attachment(parent, item)

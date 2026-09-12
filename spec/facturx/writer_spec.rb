@@ -207,6 +207,16 @@ RSpec.describe Facturx::Writer do
           .to raise_conformance_error_for('BT-71-1', code: :invalid_value)
       end
 
+      it 'reports a header invoiced object scheme without a value' do
+        expect { writer.call(document: document_with_header_invoiced_object_scheme, profile:) }
+          .to raise_conformance_error_for('BT-18-1', code: :invalid_value)
+      end
+
+      it 'reports a line invoiced object scheme without a value' do
+        expect { writer.call(document: document_with_line_invoiced_object_scheme, profile:) }
+          .to raise_conformance_error_for('BT-128-1', code: :invalid_value)
+      end
+
       it 'reports a credit transfer account scheme' do
         expect { writer.call(document: document_with_credit_transfer_scheme, profile:) }
           .to raise_conformance_error_for('BT-84', code: :invalid_value)
@@ -419,6 +429,15 @@ RSpec.describe Facturx::Writer do
     document.with(delivery:)
   end
 
+  def document_with_header_invoiced_object_scheme
+    document.with(invoiced_object_identifier: Facturx::Identifier.new(scheme_id: 'OBJ'))
+  end
+
+  def document_with_line_invoiced_object_scheme
+    line = document.lines.first.with(invoiced_object_identifier: Facturx::Identifier.new(scheme_id: 'OBJ'))
+    document.with(lines: [line])
+  end
+
   def document_with_credit_transfer_scheme
     transfer = document.payment.credit_transfers.first
     account = transfer.account_identifier.with(scheme_id: '0088')
@@ -504,10 +523,10 @@ RSpec.describe Facturx::Writer do
   end
 
   def document_without_reference_values
-    line = document.lines.first.with(invoiced_object_identifier: Facturx::Identifier.new(scheme_id: 'OBJ'))
+    line = document.lines.first.with(invoiced_object_identifier: Facturx::Identifier.new)
     document.with(
       tender_or_lot_reference: Facturx::DocumentReference.new,
-      invoiced_object_identifier: Facturx::Identifier.new(scheme_id: 'OBJ'),
+      invoiced_object_identifier: Facturx::Identifier.new,
       lines: [line]
     )
   end
