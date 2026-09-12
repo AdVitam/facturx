@@ -7,6 +7,7 @@ require_relative '../embedding'
 module Facturx
   module Pdf
     class Extractor
+      ACCEPTED_RELATIONSHIPS = %i[Alternative Data].freeze
       Result = Data.define(:xml, :filename, :relationship, :metadata, :page_count)
       Candidate = Data.define(:file_specification, :names)
 
@@ -31,7 +32,7 @@ module Facturx
 
         Result.new(xml: embedded_xml(document, file_specification),
                    filename: FACTURX_EMBEDDING.filename,
-                   relationship: FACTURX_EMBEDDING.relationship,
+                   relationship: file_specification[:AFRelationship],
                    metadata: document.metadata,
                    page_count: document.page_count)
       end
@@ -50,7 +51,9 @@ module Facturx
       end
 
       def matching_candidates(candidates)
-        candidates.select { |candidate| candidate.names.include?(FACTURX_EMBEDDING.filename) }
+        candidates
+          .select { |candidate| candidate.names.include?(FACTURX_EMBEDDING.filename) }
+          .uniq { |candidate| candidate.file_specification.object_id }
       end
 
       def associated_file_candidates(document)
@@ -93,9 +96,9 @@ module Facturx
       end
 
       def validate_relationship!(file_specification)
-        return if file_specification[:AFRelationship] == FACTURX_EMBEDDING.relationship
+        return if ACCEPTED_RELATIONSHIPS.include?(file_specification[:AFRelationship])
 
-        raise ExtractionError.new('Factur-X attachment must use the Alternative relationship',
+        raise ExtractionError.new('Factur-X attachment uses an unsupported relationship',
                                   reason: :invalid_relationship,
                                   relationship: file_specification[:AFRelationship])
       end
