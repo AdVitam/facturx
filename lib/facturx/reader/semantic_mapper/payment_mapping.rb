@@ -9,7 +9,10 @@ module Facturx
         nodes = group_nodes('BG-16', collapse_if: method(:projected_credit_transfers?))
         base = group_xpath('BG-16')
         attributes = settlement_payment_attributes(nodes.first, base)
-        attributes.merge!(payment_means_attributes(nodes, base, projected: projected_credit_transfers?(nodes))) if nodes.any?
+        if nodes.any?
+          attributes.merge!(payment_means_attributes(nodes, base,
+                                                     projected: projected_credit_transfers?(nodes)))
+        end
         return if attributes.empty?
 
         PaymentInstructions.new(**attributes)

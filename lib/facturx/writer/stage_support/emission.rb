@@ -11,11 +11,7 @@ module Facturx
           values = present_values(value)
           return [] unless options.fetch(:group_present, true)
 
-          accepted = tracker.observe_term?(
-            term,
-            values:,
-            path: term.xpath
-          )
+          accepted = tracker.observe_term?(term, values:, path: term.xpath)
           return [] unless accepted
 
           values.filter_map { |item| emit_value(term, item, options) }
@@ -27,11 +23,7 @@ module Facturx
           group_present = options.fetch(:group_present, !options.fetch(:node).nil?)
           return unless group_present
 
-          accepted = tracker.observe_term?(
-            term,
-            values:,
-            path: term.xpath
-          )
+          accepted = tracker.observe_term?(term, values:, path: term.xpath)
           return unless accepted
 
           emit_attribute_value(term, values, options)

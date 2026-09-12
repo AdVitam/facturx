@@ -95,7 +95,6 @@ module Facturx
       def required?(cardinality) = cardinality.start_with?('1')
 
       def repeated?(cardinality) = cardinality.end_with?('n')
-
     end
     private_constant :Tracking
 
@@ -149,9 +148,6 @@ module Facturx
       def report
         Report.new(profile:, issues: @issues)
       end
-
-      private
-
     end
   end
 end

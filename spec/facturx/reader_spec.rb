@@ -157,13 +157,9 @@ RSpec.describe Facturx::Reader do
     expect(readings.map { |reading| tax_diagnostic_counts(reading) }).to eq([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
   end
 
-  it 'reports non-projected duplicate payment instructions without mapping the second type code' do
-    diagnostics = reader.call(xml_with_two_payment_instructions).diagnostics
-
-    expect([
-             diagnostics.count { |diagnostic| diagnostic.code == :multiple_values && diagnostic.term_id == 'BG-16' },
-             diagnostics.any? { |diagnostic| diagnostic.code == :unmapped_element && diagnostic.path.end_with?('/ram:TypeCode') }
-           ]).to eq([1, true])
+  it 'reports non-projected payment instructions without mapping their distinct attributes' do
+    expect(payment_instruction_diagnostic_summary(reader.call(xml_with_two_payment_instructions).diagnostics))
+      .to eq([1, true, true])
   end
 
   it 'reads a BASIC credit transfer without the EN16931-only provider identifier' do
@@ -340,6 +336,16 @@ RSpec.describe Facturx::Reader do
     reading.diagnostics.any? { |item| item.code == :unmapped_element }
   end
 
+  def unmapped_payment_attribute?(diagnostics, element)
+    diagnostics.any? { |item| item.code == :unmapped_element && item.path.end_with?("/ram:#{element}") }
+  end
+
+  def payment_instruction_diagnostic_summary(diagnostics)
+    [diagnostics.count { |item| item.code == :multiple_values && item.term_id == 'BG-16' },
+     unmapped_payment_attribute?(diagnostics, 'TypeCode'),
+     unmapped_payment_attribute?(diagnostics, 'Information')]
+  end
+
   def gross_price_discount_diagnostics(reading)
     diagnostics = reading.diagnostics
     [diagnostics.any? { |item| item.code == :unmapped_element && item.path.end_with?('/ram:ActualAmount') },
@@ -446,10 +452,12 @@ RSpec.describe Facturx::Reader do
   end
 
   def xml_with_two_payment_instructions
-    payment = '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode>' \
-              '</ram:SpecifiedTradeSettlementPaymentMeans>'
+    payment = lambda do |information|
+      '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode>' \
+        "<ram:Information>#{information}</ram:Information></ram:SpecifiedTradeSettlementPaymentMeans>"
+    end
     marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
-    complete_en16931_xml.sub(marker, "#{marker}#{payment}#{payment}")
+    complete_en16931_xml.sub(marker, "#{marker}#{payment.call('SEPA')}#{payment.call('non-SEPA')}")
   end
 
   def xml_with_settlement_payment_details(xml)
