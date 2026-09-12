@@ -22,12 +22,8 @@ module Facturx
           def identifiers(parent, item)
             emit_compound_identifier(parent, item.global_identifier, value_id: 'BT-157', scheme_id: 'BT-157-1',
                                                                      element: 'ram:GlobalID')
-            emit_identifier(parent, 'BT-155', item.seller_identifier, 'ram:SellerAssignedID')
-            emit_identifier(parent, 'BT-156', item.buyer_identifier, 'ram:BuyerAssignedID')
-          end
-
-          def emit_identifier(parent, id, identifier, element)
-            emit(id, identifier&.value, element:, parent:)
+            emit_identifier_value('BT-155', item.seller_identifier, 'ram:SellerAssignedID', parent)
+            emit_identifier_value('BT-156', item.buyer_identifier, 'ram:BuyerAssignedID', parent)
           end
 
           def attributes(parent, values)

@@ -64,7 +64,7 @@ module Facturx
           return observe?('BT-91', nil) unless identifier
 
           container(parent, 'ram:PayerPartyDebtorFinancialAccount') do |node|
-            emit('BT-91', identifier.value, element: 'ram:IBANID', parent: node)
+            emit_identifier_value('BT-91', identifier, 'ram:IBANID', node)
           end
         end
 
@@ -88,12 +88,8 @@ module Facturx
           return observe?('BT-86', nil) unless identifier
 
           container(parent, 'ram:PayeeSpecifiedCreditorFinancialInstitution') do |node|
-            emit('BT-86', identifier.value, element: 'ram:BICID', parent: node)
+            emit_identifier_value('BT-86', identifier, 'ram:BICID', node)
           end
-        end
-
-        def emit_identifier_value(id, identifier, element, parent)
-          emit(id, identifier&.value, element:, parent:)
         end
       end
     end

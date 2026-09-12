@@ -207,6 +207,16 @@ RSpec.describe Facturx::Writer do
           .to raise_conformance_error_for('BT-71-1', code: :invalid_value)
       end
 
+      it 'reports a credit transfer account scheme' do
+        expect { writer.call(document: document_with_credit_transfer_scheme, profile:) }
+          .to raise_conformance_error_for('BT-84', code: :invalid_value)
+      end
+
+      it 'reports a noncanonical tax registration scheme' do
+        expect { writer.call(document: document_with_tax_registration_scheme, profile:) }
+          .to raise_conformance_error_for('BT-31', code: :invalid_value)
+      end
+
       it 'uses the identifier as a project name when the supplied name is blank' do
         id_only_document = document.with(
           project_reference: Facturx::DocumentReference.new(id: 'PROJECT', name: ' ')
@@ -407,6 +417,18 @@ RSpec.describe Facturx::Writer do
     identifier = Facturx::Identifier.new(scheme_id: '0088')
     delivery = document.delivery.with(location_identifier: identifier, party: nil)
     document.with(delivery:)
+  end
+
+  def document_with_credit_transfer_scheme
+    transfer = document.payment.credit_transfers.first
+    account = transfer.account_identifier.with(scheme_id: '0088')
+    payment = document.payment.with(credit_transfers: [transfer.with(account_identifier: account)])
+    document.with(payment:)
+  end
+
+  def document_with_tax_registration_scheme
+    vat_identifier = document.seller.vat_identifier.with(scheme_id: 'XX')
+    document.with(seller: document.seller.with(vat_identifier:))
   end
 
   def blank_tax_type_document

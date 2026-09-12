@@ -33,6 +33,7 @@ module Facturx
         end
 
         def emit_tax_registration(parent, id, identifier, scheme)
+          report_unrepresentable_identifier_scheme(id, identifier, represented_scheme: scheme)
           value = identifier&.value
           unless value
             observe?(id, nil)
@@ -64,6 +65,18 @@ module Facturx
 
             unrepresentable(id, "Document reference #{attribute} cannot be represented")
           end
+        end
+
+        def emit_identifier_value(id, identifier, element, parent)
+          report_unrepresentable_identifier_scheme(id, identifier)
+          emit(id, identifier&.value, element:, parent:)
+        end
+
+        def report_unrepresentable_identifier_scheme(id, identifier, represented_scheme: nil)
+          scheme_id = identifier&.scheme_id
+          return unless scheme_id && scheme_id != represented_scheme
+
+          unrepresentable(id, 'Identifier scheme cannot be represented')
         end
 
         def emit_identifier_scheme(node, identifier, options)
