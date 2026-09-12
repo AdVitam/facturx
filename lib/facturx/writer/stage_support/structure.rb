@@ -13,15 +13,22 @@ module Facturx
           return unless accepted
 
           values.each do |item|
-            report_unrepresentable_attributes(group.id, item, model: group.model, represented_attributes:) if group.attribute
-            node = context.element(parent, element)
-            yield(node, item)
-            remove_if_empty(node)
+            write_group_item(group, item, element, parent, represented_attributes) { |node| yield(node, item) }
           end
         end
 
         def each_group(id, values, element:, parent:, represented_attributes: [], &)
           within_group(id, Array(values), element:, parent:, represented_attributes:, &)
+        end
+
+        def write_group_item(group, item, element, parent, represented_attributes)
+          if group.attribute
+            report_unrepresentable_attributes(group.id, item, model: group.model,
+                                                              represented_attributes:)
+          end
+          node = context.element(parent, element)
+          yield node
+          remove_if_empty(node)
         end
 
         def technical(parent, element, value, default: nil)

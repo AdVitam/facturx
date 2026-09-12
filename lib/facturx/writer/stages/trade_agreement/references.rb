@@ -78,19 +78,25 @@ module Facturx
 
           def project(parent)
             value = document.project_reference
-            unless value && (value.id || value.name)
-              observe?('BT-11', nil)
-              return
-            end
-
-            report_unrepresentable_reference_attributes('BT-11', value, represented_attributes: [:name])
-
-            return unrepresentable('BT-11', 'Project reference requires an identifier') unless value.id
+            return observe?('BT-11', nil) unless project_reference?(value)
+            return unless representable_project_reference?(value)
 
             container(parent, 'ram:SpecifiedProcuringProject') do |node|
               emit('BT-11', value.id, element: 'ram:ID', parent: node)
               technical(node, 'ram:Name', value.name, default: value.id)
             end
+          end
+
+          def project_reference?(value)
+            value && (value.id || value.name)
+          end
+
+          def representable_project_reference?(value)
+            report_unrepresentable_reference_attributes('BT-11', value, represented_attributes: [:name])
+            return true if value.id
+
+            unrepresentable('BT-11', 'Project reference requires an identifier')
+            false
           end
         end
       end
