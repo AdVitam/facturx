@@ -7,8 +7,9 @@ Gem::Specification.new do |spec|
   spec.version = Facturx::VERSION
   spec.authors = ['AdVitam']
   spec.email = ['tech@advitam.fr']
-  spec.summary = 'Validate, compose, and extract Factur-X invoices'
-  spec.description = 'Ruby toolkit for validating Factur-X XML and composing or extracting PDF/A-3 invoices.'
+  spec.summary = 'Read, validate, compose, and extract Factur-X invoices'
+  spec.description = 'Ruby toolkit for reading and validating Factur-X XML ' \
+                     'and composing or extracting PDF/A-3 invoices.'
   spec.homepage = 'https://github.com/AdVitam/facturx'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.2'

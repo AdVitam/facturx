@@ -78,8 +78,21 @@ RSpec.describe Facturx::Pdf::Extractor do
     expect(extraction_error(pdf).details).to include(reason: :invalid_filename)
   end
 
-  it 'rejects an attachment without the Alternative relationship' do
+  it 'accepts the Data relationship used by official Factur-X examples' do
     objects = embedded_file_objects(xml, relationship: 'Data')
+    pdf = build_pdf(catalog: '/AF [4 0 R]', extra_objects: objects)
+
+    expect(extractor.call(pdf)).to have_attributes(xml:, relationship: :Data)
+  end
+
+  it 'deduplicates repeated references to the same attachment' do
+    pdf = build_pdf(catalog: '/AF [4 0 R 4 0 R]', extra_objects: embedded_file_objects(xml))
+
+    expect(extractor.call(pdf).xml).to eq(xml)
+  end
+
+  it 'rejects an unsupported attachment relationship' do
+    objects = embedded_file_objects(xml, relationship: 'Unspecified')
     pdf = build_pdf(catalog: '/AF [4 0 R]', extra_objects: objects)
 
     expect(extraction_error(pdf).details).to include(reason: :invalid_relationship)

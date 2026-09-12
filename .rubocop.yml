@@ -21,6 +21,11 @@ Naming/PredicateMethod:
   AllowedMethods:
     - verify_xml
 
+Naming/VariableNumber:
+  AllowedIdentifiers:
+    - date_102
+    - en16931
+
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'

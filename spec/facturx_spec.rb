@@ -17,6 +17,11 @@ RSpec.describe Facturx do
     expect { described_class.verify_xml(xml: '<broken') }.to raise_error(Facturx::InvalidXmlError)
   end
 
+  it 'reads XML through the public facade' do
+    reading = described_class.read(xml)
+    expect(reading).to have_attributes(source: xml, document: have_attributes(invoice_number: 'F-2023-004'))
+  end
+
   it 'composes and extracts the exact XML through the public facade' do
     skip 'Ghostscript Factur-X resources are unavailable' unless composer.available?
 

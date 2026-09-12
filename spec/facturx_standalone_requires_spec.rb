@@ -16,6 +16,10 @@ RSpec.describe Facturx do
     expect(ruby_eval(attach_require_source)).to eq('Facturx::Attach')
   end
 
+  it 'loads the reader without the public facade' do
+    expect(ruby_eval(reader_require_source)).to eq('Facturx::Reader')
+  end
+
   def ruby_eval(source)
     stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I#{File.expand_path('../lib', __dir__)}",
                                             '-e', source)
@@ -53,5 +57,9 @@ RSpec.describe Facturx do
 
   def attach_require_source
     "require 'facturx/attach'; print Facturx::Attach.new.class"
+  end
+
+  def reader_require_source
+    "require 'facturx/reader'; print Facturx::Reader.new.class"
   end
 end
