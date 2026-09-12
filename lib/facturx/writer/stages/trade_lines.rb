@@ -4,6 +4,8 @@ module Facturx
   class Writer
     module Stages
       class TradeLines < Stage
+        REPRESENTED_ATTRIBUTES = %i[gross_price net_price buyer_order_reference].freeze
+
         term_ids(*%w[
                    BT-126 BT-127 BT-157 BT-157-1 BT-155 BT-156 BT-153 BT-154 BT-160 BT-161 BT-158 BT-158-1
                    BT-158-2 BT-159 BT-132 BT-148 BT-149-1 BT-150-1 BT-147-01 BT-147-02 BT-147 BT-146 BT-149
@@ -23,9 +25,7 @@ module Facturx
         def call
           each_group('BG-25', document.lines, element: 'ram:IncludedSupplyChainTradeLineItem',
                                               parent: context.transaction,
-                                              represented_attributes: %i[
-                                                gross_price net_price buyer_order_reference
-                                              ]) do |node, line|
+                                              represented_attributes: REPRESENTED_ATTRIBUTES) do |node, line|
             line_document(node, line)
             @product.call(parent: node, value: line.product)
             @agreement.call(parent: node, line:)
