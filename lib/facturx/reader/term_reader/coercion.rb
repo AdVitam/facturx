@@ -3,21 +3,25 @@
 module Facturx
   class Reader
     class TermReader
-      def coerced_value(xpath, context:, type:, term_id: nil, required: false)
+      def coerced_value(xpath, context:, type:, term_id: nil, **options)
         node = context.at_xpath(xpath, NAMESPACES)
-        return diagnose_raw_missing(xpath, term_id) if node.nil? && required
+        return diagnose_raw_missing(options.fetch(:missing_path, xpath), term_id) if node.nil? && options[:required]
         return unless node
 
-        mark(node)
-        return diagnose_raw_empty(node, term_id) if node.text.strip.empty?
-
-        @coercer.call(node.text, type:, term_id:, path: node.path)
+        coerce_raw_value(node, type:, term_id:)
       rescue CoercionError => e
         add(:invalid_value, term_id, node.path, e.message, e.details)
         nil
       end
 
       private
+
+      def coerce_raw_value(node, type:, term_id:)
+        mark(node)
+        return diagnose_raw_empty(node, term_id) if node.text.strip.empty?
+
+        @coercer.call(node.text, type:, term_id:, path: node.path)
+      end
 
       def coerce(node, term)
         return diagnose_empty(node, term) if node.text.strip.empty?

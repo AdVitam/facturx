@@ -24,7 +24,6 @@ module Facturx
     SCALES = [nil, 2].freeze
     CARDINALITIES = ['0..1', '1..1', '0..n', '1..n'].freeze
     EMPTY_TERMS = [].freeze
-    EMPTY_GROUPS = [].freeze
 
     ALL = [
       *TermDeclarations::DOCUMENT,
@@ -43,9 +42,6 @@ module Facturx
     GROUPS_BY_ID = GROUPS.to_h { |group| [group.id, group] }.freeze
     TERMS_BY_PROFILE = PROFILE_TERM_COUNTS.keys.to_h do |profile_id|
       [profile_id, ALL.select { |term| term.cardinalities.key?(profile_id) }.freeze]
-    end.freeze
-    GROUPS_BY_PROFILE = PROFILE_TERM_COUNTS.keys.to_h do |profile_id|
-      [profile_id, GROUPS.select { |group| group.cardinalities.key?(profile_id) }.freeze]
     end.freeze
 
     module_function
@@ -69,11 +65,6 @@ module Facturx
     def for_profile(profile)
       profile_id = profile.respond_to?(:id) ? profile.id : profile.to_sym
       TERMS_BY_PROFILE.fetch(profile_id, EMPTY_TERMS)
-    end
-
-    def groups_for_profile(profile)
-      profile_id = profile.respond_to?(:id) ? profile.id : profile.to_sym
-      GROUPS_BY_PROFILE.fetch(profile_id, EMPTY_GROUPS)
     end
 
     def validate!

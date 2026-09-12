@@ -4,6 +4,7 @@ module Facturx
   class Reader
     class SemanticMapper
       EMPTY_TERMS = [].freeze
+      TaxBreakdownResult = Data.define(:items, :vat_point_date)
 
       def initialize(document:, profile:, registry:, coercer:, diagnostics:)
         @document = document
@@ -16,7 +17,10 @@ module Facturx
       end
 
       def call
-        attributes = document_attributes.merge(party_attributes, transaction_attributes, collection_attributes)
+        tax_breakdowns = read_tax_breakdowns
+        attributes = document_attributes(tax_breakdowns).merge(
+          party_attributes, transaction_attributes, collection_attributes(tax_breakdowns.items)
+        )
         attributes[:totals] = totals(attributes[:currency], attributes[:tax_currency])
         Document.new(**attributes)
       end
@@ -42,9 +46,9 @@ module Facturx
         }
       end
 
-      def collection_attributes
+      def collection_attributes(tax_breakdowns)
         {
-          notes: notes, lines: lines, tax_breakdowns: tax_breakdowns,
+          notes: notes, lines: lines, tax_breakdowns:,
           allowances: allowance_charges('BG-20', charge: false),
           charges: allowance_charges('BG-21', charge: true),
           preceding_invoices: preceding_invoices, supporting_documents: supporting_documents

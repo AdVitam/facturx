@@ -13,8 +13,8 @@ module Facturx
 
       private
 
-      def document_attributes
-        scalar_document_attributes.merge(
+      def document_attributes(tax_breakdowns)
+        scalar_document_attributes(tax_breakdowns).merge(
           reference_document_attributes,
           tender_or_lot_reference: additional_reference(:tender_or_lot_reference, type_code: '50'),
           invoiced_object_identifier: invoiced_object_identifier,
@@ -22,16 +22,12 @@ module Facturx
         )
       end
 
-      def scalar_document_attributes
+      def scalar_document_attributes(tax_breakdowns)
         attributes = [nil, 'BG-2', 'BG-19'].each_with_object({}) do |group_id, result|
           result.merge!(scalar_attributes(:document, group_id, except: DOCUMENT_COMPOSITE_ATTRIBUTES))
         end
-        tax_breakdown = first_group('BG-23')
-        return attributes unless tax_breakdown
-
-        base = group_xpath('BG-23')
-        attributes.merge!(scalar_attributes(:document, 'BG-23', context: tax_breakdown, base_xpath: base))
-        attributes.merge(vat_point_date_code: value('BT-8', context: tax_breakdown, base_xpath: base))
+        attributes.merge(vat_point_date: tax_breakdowns.vat_point_date,
+                         vat_point_date_code: tax_breakdowns.items.first&.due_date_type_code)
       end
 
       def reference_document_attributes

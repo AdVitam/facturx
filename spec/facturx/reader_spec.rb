@@ -124,6 +124,13 @@ RSpec.describe Facturx::Reader do
       .to eq([Date.new(2023, 1, 1), '35', false])
   end
 
+  it 'emits each tax diagnostic once when the first breakdown is absent or malformed' do
+    readings = [xml_without_header_tax, xml_with_empty_tax_code, xml_with_invalid_tax_date].map do |xml|
+      reader.call(xml)
+    end
+    expect(readings.map { |reading| tax_diagnostic_counts(reading) }).to eq([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+  end
+
   it 'reports duplicate payment instructions once through BG-16' do
     diagnostics = reader.call(xml_with_two_payment_instructions).diagnostics
 
@@ -136,6 +143,13 @@ RSpec.describe Facturx::Reader do
     expect(credit_transfer).to have_attributes(
       account_identifier: Facturx::Identifier.new(value: 'FR761234'), provider_identifier: nil
     )
+  end
+
+  it 'maps settlement payment fields without a payment means for BASIC WL and EN16931' do
+    readings = [File.binread('spec/fixtures/xml/basic_wl.xml'), en16931_xml].map do |xml|
+      reader.call(xml_with_settlement_payment_details(xml))
+    end
+    expect(readings.map { |reading| payment_without_means_attributes(reading) }).to eq(payment_without_means_expected)
   end
 
   it 'keeps BG-24 reference types exclusive' do
@@ -170,6 +184,10 @@ RSpec.describe Facturx::Reader do
       diagnostics: include(have_attributes(code: :invalid_value)),
       document: have_attributes(allowances: [], charges: [])
     )
+  end
+
+  it 'reports a missing adjustment indicator with its absolute group path' do
+    expect(adjustment_indicator_diagnostic.path).to eq(missing_adjustment_indicator_path)
   end
 
   it 'maps gross price discounts only for an allowance indicator' do
@@ -227,6 +245,35 @@ RSpec.describe Facturx::Reader do
     diagnostics.any? { |item| item.code == :multiple_values && item.term_id.match?(/\ABT-[78]\z/) }
   end
 
+  def tax_diagnostic_counts(reading)
+    [%w[missing_required_term BG-23], %w[empty_value BT-8], %w[invalid_value BT-7]].map do |code, term_id|
+      reading.diagnostics.count { |item| item.code == code.to_sym && item.term_id == term_id }
+    end
+  end
+
+  def adjustment_indicator_diagnostic
+    reader.call(xml_with_adjustment_without_indicator).diagnostics.find { |item| item.term_id == 'BG-20-1' }
+  end
+
+  def missing_adjustment_indicator_path
+    '/rsm:CrossIndustryInvoice/rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeSettlement' \
+      '/ram:SpecifiedTradeAllowanceCharge/ram:ChargeIndicator/udt:Indicator'
+  end
+
+  def payment_without_means_attributes(reading)
+    payment = reading.document.payment
+    [payment.remittance_information, payment.direct_debit, payment.means_code,
+     reading.diagnostics.any? { |item| item.code == :unmapped_element && item.path.include?('Payment') }]
+  end
+
+  def payment_without_means_expected
+    direct_debit = Facturx::DirectDebit.new(
+      mandate_identifier: Facturx::Identifier.new(value: 'MANDATE'),
+      creditor_identifier: Facturx::Identifier.new(value: 'CREDITOR')
+    )
+    [['REFERENCE', direct_debit, nil, false], ['REFERENCE', direct_debit, nil, false]]
+  end
+
   def defective_xml
     minimum_xml
       .sub('<ram:ID>F-2023-001</ram:ID>', '<ram:ID>F-2023-001</ram:ID><ram:ID>duplicate</ram:ID>')
@@ -278,11 +325,38 @@ RSpec.describe Facturx::Reader do
     en16931_xml.sub(marker, "#{tax.call('S')}#{tax.call('Z')}")
   end
 
+  def xml_without_header_tax
+    en16931_xml.sub(header_tax_xml, '')
+  end
+
+  def xml_with_empty_tax_code
+    xml_with_two_tax_breakdowns.sub('<ram:DueDateTypeCode>35</ram:DueDateTypeCode>', '<ram:DueDateTypeCode/>')
+  end
+
+  def xml_with_invalid_tax_date
+    xml_with_two_tax_breakdowns.sub('<udt:DateString format="102">20230101',
+                                    '<udt:DateString format="102">invalid-date')
+  end
+
+  def header_tax_xml
+    "<ram:ApplicableTradeTax>\n                <ram:TypeCode>VAT</ram:TypeCode>\n                " \
+      "<ram:CategoryCode>S</ram:CategoryCode>\n            </ram:ApplicableTradeTax>"
+  end
+
   def xml_with_two_payment_instructions
     payment = '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode>' \
               '</ram:SpecifiedTradeSettlementPaymentMeans>'
     marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
     complete_en16931_xml.sub(marker, "#{marker}#{payment}#{payment}")
+  end
+
+  def xml_with_settlement_payment_details(xml)
+    payment = '<ram:PaymentReference>REFERENCE</ram:PaymentReference>' \
+              '<ram:CreditorReferenceID>CREDITOR</ram:CreditorReferenceID>' \
+              '<ram:SpecifiedTradePaymentTerms><ram:DirectDebitMandateID>MANDATE</ram:DirectDebitMandateID>' \
+              '</ram:SpecifiedTradePaymentTerms>'
+    marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
+    xml.sub(marker, "#{marker}#{payment}")
   end
 
   def xml_with_references
@@ -312,6 +386,13 @@ RSpec.describe Facturx::Reader do
     adjustments = indicators.zip(%w[5 7]).map { |indicator, amount| adjustment_xml(indicator, amount) }.join
     marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
     complete_en16931_xml.sub(marker, "#{marker}#{adjustments}")
+  end
+
+  def xml_with_adjustment_without_indicator
+    adjustment = '<ram:SpecifiedTradeAllowanceCharge><ram:ActualAmount>5</ram:ActualAmount>' \
+                 '</ram:SpecifiedTradeAllowanceCharge>'
+    marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
+    complete_en16931_xml.sub(marker, "#{marker}#{adjustment}")
   end
 
   def xml_with_line_adjustments

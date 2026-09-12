@@ -5,12 +5,15 @@ module Facturx
     class SemanticMapper
       private
 
-      def tax_breakdowns
-        group_nodes('BG-23').map do |node|
-          base = group_xpath('BG-23')
+      def read_tax_breakdowns
+        nodes = group_nodes('BG-23')
+        base = group_xpath('BG-23')
+        items = nodes.map do |node|
           attributes = scalar_attributes(:tax_breakdown, 'BG-23', context: node, base_xpath: base)
           TaxBreakdown.new(type_code: technical_value('./ram:TypeCode', node), **attributes)
         end
+        vat_point_date = value('BT-7', context: nodes.first, base_xpath: base) if nodes.first
+        TaxBreakdownResult.new(items:, vat_point_date:)
       end
 
       def allowance_charges(group_id, charge:, context: @document, base_xpath: nil)
@@ -40,7 +43,9 @@ module Facturx
         @charge_indicators ||= {}.compare_by_identity
         @charge_indicators.fetch(node) do
           path = './ram:ChargeIndicator/udt:Indicator'
-          @charge_indicators[node] = technical_boolean(path, node, term_id: "#{group_id}-1", required: true)
+          @charge_indicators[node] = technical_boolean(
+            path, node, term_id: "#{group_id}-1", required: true, missing_path: group_xpath("#{group_id}-1")
+          )
         end
       end
 

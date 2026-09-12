@@ -51,8 +51,8 @@ module Facturx
         @terms.raw_value(xpath, context:)
       end
 
-      def technical_boolean(xpath, context, term_id:, required: false)
-        @terms.coerced_value(xpath, context:, type: :boolean, term_id:, required:)
+      def technical_boolean(xpath, context, term_id:, required: false, missing_path: xpath)
+        @terms.coerced_value(xpath, context:, type: :boolean, term_id:, required:, missing_path:)
       end
 
       def value(id, context: @document, base_group: nil, base_xpath: nil, nodes: nil)
