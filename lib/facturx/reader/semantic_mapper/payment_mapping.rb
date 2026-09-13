@@ -6,10 +6,13 @@ module Facturx
       private
 
       def payment
-        nodes = group_nodes('BG-16')
+        nodes = group_nodes('BG-16', collapse_if: method(:projected_credit_transfers?))
         base = group_xpath('BG-16')
         attributes = settlement_payment_attributes(nodes.first, base)
-        attributes.merge!(payment_means_attributes(nodes.first, base)) if nodes.first
+        if nodes.any?
+          attributes.merge!(payment_means_attributes(nodes, base,
+                                                     projected: projected_credit_transfers?(nodes)))
+        end
         return if attributes.empty?
 
         PaymentInstructions.new(**attributes)
@@ -22,18 +25,52 @@ module Facturx
         attributes.compact
       end
 
-      def payment_means_attributes(node, base)
-        provider = term_for(:credit_transfer, 'BG-16', :provider_identifier)
-        provider_identifier = identifier(provider&.id, context: node, base_xpath: base)
-        scalar_attributes(:payment_instructions, 'BG-16', context: node, base_xpath: base).merge(
-          credit_transfers: credit_transfers(node, base, provider_identifier),
-          payment_card: payment_card(node, base)
+      def payment_means_attributes(nodes, base, projected:)
+        attributes = scalar_attributes(:payment_instructions, 'BG-16', context: nodes.first, base_xpath: base)
+        payment_nodes = projected ? nodes : [nodes.first]
+        mark_repeated_payment_attributes(payment_nodes.drop(1), base) if projected
+        attributes.merge(
+          credit_transfers: credit_transfers(payment_nodes, base),
+          payment_card: payment_nodes.filter_map { |node| payment_card(node, base) }.first
         )
       end
 
-      def credit_transfers(parent, parent_base, provider_identifier)
-        group_nodes('BG-17', context: parent, base_xpath: parent_base).map do |node|
-          credit_transfer(node, provider_identifier)
+      def mark_repeated_payment_attributes(nodes, base)
+        %w[BT-81 BT-82].each do |term_id|
+          nodes.each { |node| @terms.mark_value(term_id, context: node, base_xpath: base) }
+        end
+      end
+
+      def projected_credit_transfers?(nodes)
+        return false unless nodes.size > 1
+        return false unless nodes.all? { |node| payment_account_count(node) == 1 }
+
+        repeated_payment_attributes?(nodes) && nodes.drop(1).all? { |node| supplemental_payment_node?(node) }
+      end
+
+      def repeated_payment_attributes?(nodes)
+        %w[ram:TypeCode ram:Information].all? do |xpath|
+          nodes.map { |node| node.at_xpath("./#{xpath}", NAMESPACES)&.text }.uniq.one?
+        end
+      end
+
+      def supplemental_payment_node?(node)
+        allowed = %w[TypeCode Information PayeePartyCreditorFinancialAccount
+                     PayeeSpecifiedCreditorFinancialInstitution]
+        node.element_children.all? { |child| allowed.include?(child.name) }
+      end
+
+      def payment_account_count(node)
+        node.xpath('./ram:PayeePartyCreditorFinancialAccount', NAMESPACES).size
+      end
+
+      def credit_transfers(parents, parent_base)
+        provider = term_for(:credit_transfer, 'BG-16', :provider_identifier)
+        parents.flat_map do |parent|
+          provider_identifier = identifier(provider&.id, context: parent, base_xpath: parent_base)
+          group_nodes('BG-17', context: parent, base_xpath: parent_base).map do |node|
+            credit_transfer(node, provider_identifier)
+          end
         end
       end
 

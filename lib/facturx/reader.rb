@@ -9,17 +9,13 @@ require_relative 'reading'
 require_relative 'source_reader'
 require_relative 'terms'
 require_relative 'xml/parser'
+require_relative 'xml/namespaces'
 require_relative 'xml/profile_detector'
 
 module Facturx
   class Reader
-    CII_NAMESPACE = 'urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100'
-    NAMESPACES = {
-      'qdt' => 'urn:un:unece:uncefact:data:standard:QualifiedDataType:100',
-      'ram' => 'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100',
-      'rsm' => CII_NAMESPACE,
-      'udt' => 'urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100'
-    }.freeze
+    CII_NAMESPACE = Xml::Namespaces::CII
+    NAMESPACES = Xml::Namespaces::MAP
     UNKNOWN_PROFILE_POLICIES = %i[fallback raise].freeze
 
     COLLABORATORS = %i[profile_resolver registry coercer profiles].freeze

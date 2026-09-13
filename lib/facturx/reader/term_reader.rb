@@ -28,14 +28,13 @@ module Facturx
         materialize(term, selected, cardinality)
       end
 
-      def group_nodes(id, context: @document, base_xpath: nil, &)
+      def group_nodes(id, context: @document, base_xpath: nil, collapse_if: nil, &)
         group = active_group(id)
         return [].freeze unless group
 
-        nodes = context.xpath(relative_xpath(group.xpath, base_xpath), NAMESPACES).to_a
-        nodes.select!(&) if block_given?
+        nodes = select_group_nodes(group, context, base_xpath, &)
         cardinality = group.cardinalities.fetch(@profile.id)
-        diagnose_cardinality(group, nodes, cardinality)
+        diagnose_cardinality(group, cardinality_nodes(nodes, collapse_if), cardinality)
         nodes.each { |node| mark(node) }
         nodes.freeze
       end
@@ -70,6 +69,15 @@ module Facturx
       end
 
       private
+
+      def select_group_nodes(group, context, base_xpath, &filter)
+        nodes = context.xpath(relative_xpath(group.xpath, base_xpath), NAMESPACES).to_a
+        filter ? nodes.select(&filter) : nodes
+      end
+
+      def cardinality_nodes(nodes, collapse_if)
+        collapse_if&.call(nodes) ? [nodes.first] : nodes
+      end
 
       def active_term(id)
         term = @registry.fetch(id)

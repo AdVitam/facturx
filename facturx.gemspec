@@ -7,8 +7,8 @@ Gem::Specification.new do |spec|
   spec.version = Facturx::VERSION
   spec.authors = ['AdVitam']
   spec.email = ['tech@advitam.fr']
-  spec.summary = 'Read, validate, compose, and extract Factur-X invoices'
-  spec.description = 'Ruby toolkit for reading and validating Factur-X XML ' \
+  spec.summary = 'Build, read, validate, compose, and extract Factur-X invoices'
+  spec.description = 'Ruby toolkit for building, reading, and validating Factur-X XML ' \
                      'and composing or extracting PDF/A-3 invoices.'
   spec.homepage = 'https://github.com/AdVitam/facturx'
   spec.license = 'MIT'
@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir.chdir(__dir__) do
     Dir['lib/**/*'].select { |path| File.file?(path) } +
+      Dir['rbi/**/*'].select { |path| File.file?(path) } +
       %w[CHANGELOG.md LICENSE.txt NOTICE.md README.md]
   end
   spec.require_paths = ['lib']

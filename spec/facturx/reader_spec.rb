@@ -47,6 +47,10 @@ RSpec.describe Facturx::Reader do
     )
   end
 
+  it 'derives MINIMUM accounting tax currency from BT-111' do
+    expect(reader.call(minimum_xml_with_accounting_tax).document).to minimum_accounting_tax_document
+  end
+
   it 'preserves repeating groups in XML order' do
     notes = '<ram:IncludedNote><ram:Content>First</ram:Content></ram:IncludedNote>' \
             '<ram:IncludedNote><ram:Content>Second</ram:Content></ram:IncludedNote>'
@@ -157,11 +161,9 @@ RSpec.describe Facturx::Reader do
     expect(readings.map { |reading| tax_diagnostic_counts(reading) }).to eq([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
   end
 
-  it 'reports duplicate payment instructions once through BG-16' do
-    diagnostics = reader.call(xml_with_two_payment_instructions).diagnostics
-
-    expect(diagnostics.select { |diagnostic| diagnostic.code == :multiple_values && diagnostic.term_id == 'BG-16' })
-      .to have_attributes(size: 1)
+  it 'reports non-projected payment instructions without mapping their distinct attributes' do
+    expect(payment_instruction_diagnostic_summary(reader.call(xml_with_two_payment_instructions).diagnostics))
+      .to eq([1, true, true])
   end
 
   it 'reads a BASIC credit transfer without the EN16931-only provider identifier' do
@@ -338,6 +340,16 @@ RSpec.describe Facturx::Reader do
     reading.diagnostics.any? { |item| item.code == :unmapped_element }
   end
 
+  def unmapped_payment_attribute?(diagnostics, element)
+    diagnostics.any? { |item| item.code == :unmapped_element && item.path.end_with?("/ram:#{element}") }
+  end
+
+  def payment_instruction_diagnostic_summary(diagnostics)
+    [diagnostics.count { |item| item.code == :multiple_values && item.term_id == 'BG-16' },
+     unmapped_payment_attribute?(diagnostics, 'TypeCode'),
+     unmapped_payment_attribute?(diagnostics, 'Information')]
+  end
+
   def gross_price_discount_diagnostics(reading)
     diagnostics = reading.diagnostics
     [diagnostics.any? { |item| item.code == :unmapped_element && item.path.end_with?('/ram:ActualAmount') },
@@ -358,6 +370,18 @@ RSpec.describe Facturx::Reader do
       .sub('20230101', 'invalid-date')
       .sub('<ram:Name>Seller Company SAS</ram:Name>', '<ram:Name> </ram:Name>')
       .sub('<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>', "<ram:Unknown>#{'x' * 300}</ram:Unknown>")
+  end
+
+  def minimum_xml_with_accounting_tax
+    tax_total = '<ram:TaxTotalAmount currencyID="EUR">20.00</ram:TaxTotalAmount>'
+    accounting_tax = '<ram:TaxTotalAmount currencyID="USD">44.00</ram:TaxTotalAmount>'
+    minimum_xml.sub(tax_total, "#{tax_total}#{accounting_tax}")
+  end
+
+  def minimum_accounting_tax_document
+    have_attributes(
+      tax_currency: 'USD', totals: have_attributes(tax_total_in_tax_currency: BigDecimal('44'))
+    )
   end
 
   def guideline_context_pattern
@@ -444,10 +468,12 @@ RSpec.describe Facturx::Reader do
   end
 
   def xml_with_two_payment_instructions
-    payment = '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode>' \
-              '</ram:SpecifiedTradeSettlementPaymentMeans>'
+    payment = lambda do |information|
+      '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode>' \
+        "<ram:Information>#{information}</ram:Information></ram:SpecifiedTradeSettlementPaymentMeans>"
+    end
     marker = '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
-    complete_en16931_xml.sub(marker, "#{marker}#{payment}#{payment}")
+    complete_en16931_xml.sub(marker, "#{marker}#{payment.call('SEPA')}#{payment.call('non-SEPA')}")
   end
 
   def xml_with_settlement_payment_details(xml)
