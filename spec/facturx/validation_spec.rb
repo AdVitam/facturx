@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'facturx/validation'
-require 'facturx/profile'
 
 RSpec.describe Facturx::Validation, :aggregate_failures do
   let(:profile) do

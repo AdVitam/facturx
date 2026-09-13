@@ -25,7 +25,7 @@ RSpec.describe Facturx::Pdf::Composer do
   end
   let(:adapters) do
     {
-      inspector: adapter(:inspect_pdf, inspector_result_class.new(page_count: 2)),
+      inspector: adapter(:inspect_pdf, Facturx::Pdf::Inspector::Result.new(page_count: 2)),
       backend: adapter(:compose, '%PDF-A'),
       extractor: adapter(:extract, :result),
       verifier: adapter(:verify_pdf, true)
@@ -44,10 +44,6 @@ RSpec.describe Facturx::Pdf::Composer do
 
   def adapter(name, result)
     adapter_class.new(events, name, result)
-  end
-
-  def inspector_result_class
-    Facturx::Pdf::Inspector::Result
   end
 
   def expected_events

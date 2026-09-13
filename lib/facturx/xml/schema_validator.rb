@@ -40,7 +40,7 @@ module Facturx
       private
 
       def load_schema(profile)
-        self.class.send(:load_schema, File.expand_path(@registry.fetch(profile)))
+        self.class.send(:load_schema, @registry.fetch(profile))
       rescue SystemCallError, Nokogiri::XML::SyntaxError => e
         raise_schema_load_error(profile, e)
       end

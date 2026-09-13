@@ -13,7 +13,7 @@ RSpec.describe Facturx::Generate do
     end
   end
   let(:pdf_composer) do
-    instance_double(pdf_composer_class).tap do |value|
+    instance_double(Facturx::Pdf::Composer).tap do |value|
       allow(value).to receive(:call) { |**arguments|
         events << [:compose, arguments]
         '%PDF'
@@ -35,9 +35,5 @@ RSpec.describe Facturx::Generate do
 
     expect { generator.call(pdf: 'source-pdf', document: Facturx::Document.new, profile: :unknown) }
       .to raise_error(Facturx::UnsupportedProfileError)
-  end
-
-  def pdf_composer_class
-    Facturx::Pdf::Composer
   end
 end
