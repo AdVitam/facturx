@@ -59,7 +59,7 @@ RSpec.describe Facturx::Reader do
   end
 
   it 'extracts a PDF before mapping its embedded XML' do
-    extractor = instance_double(Facturx::Pdf::Extractor, call: extracted_result)
+    extractor = instance_double(FacturxSpec.internal_constant('Pdf::Extractor'), call: extracted_result)
     reading = described_class.new(extractor:).call("prefix\n%PDF-1.7\n".b)
     expect(reading).to have_attributes(source_type: :pdf, document: have_attributes(invoice_number: 'F-2023-004'))
   end
@@ -270,14 +270,14 @@ RSpec.describe Facturx::Reader do
   it 'sniffs byte strings independently from their declared encoding' do
     bytes = +'plain XML bytes'
     bytes.force_encoding(Encoding::UTF_16LE)
-    expect(Facturx::SourceReader.new.call(bytes).source_type).to eq(:xml)
+    expect(FacturxSpec::SourceReader.new.call(bytes).source_type).to eq(:xml)
   end
 
   it 'sniffs PDF byte strings before normalizing their encoding' do
     source = (+'%PDF-1.7\\n').force_encoding(Encoding::UTF_16LE)
-    extractor = instance_double(Facturx::Pdf::Extractor, call: extracted_result)
+    extractor = instance_double(FacturxSpec.internal_constant('Pdf::Extractor'), call: extracted_result)
 
-    expect(Facturx::SourceReader.new(extractor:).call(source).source_type).to eq(:pdf)
+    expect(FacturxSpec::SourceReader.new(extractor:).call(source).source_type).to eq(:pdf)
   end
 
   it 'rejects unsupported policies' do
@@ -289,11 +289,11 @@ RSpec.describe Facturx::Reader do
   end
 
   it 'rejects non-string sources' do
-    expect { reader.call(StringIO.new(minimum_xml)) }.to raise_error(Facturx::InvalidXmlError)
+    expect { reader.call(StringIO.new(minimum_xml)) }.to raise_error(Facturx::InvalidSourceError)
   end
 
   def extracted_result
-    Facturx::Pdf::Extractor::Result.new(
+    FacturxSpec.internal_constant('Pdf::Extractor::Result').new(
       xml: complete_en16931_xml, filename: nil, relationship: nil, metadata: nil, page_count: 1
     )
   end

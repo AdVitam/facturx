@@ -1,32 +1,37 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'facturx/conformance'
+require 'facturx/validation'
 require 'facturx/document'
 require 'facturx/format'
 require 'facturx/group'
 require 'facturx/profile'
 require 'facturx/term'
 
-RSpec.describe Facturx::Conformance, :aggregate_failures do
+RSpec.describe Facturx::Validation, :aggregate_failures do
   let(:profile) do
-    Facturx::Profile.new(id: :en16931, guideline_urn: 'urn:example:en16931', xsd_path: '/schema.xsd',
-                         conformance_level: 'EN 16931')
+    Facturx::Profile.new(id: :en16931, guideline_urn: 'urn:example:en16931', conformance_level: 'EN 16931')
   end
-  let(:tracker) { Facturx::Conformance::Tracker.new(profile:) }
+  let(:tracker) { FacturxSpec::ValidationTracker.new(profile:) }
 
-  describe Facturx::Conformance::Issue do
+  describe Facturx::Validation::Issue do
     it 'deep-copies and freezes all mutable input' do
       details = { nested: [+'value'] }
-      issue = described_class.new(code: :invalid_value, message: +'Invalid', details:)
+      issue = described_class.new(code: :invalid_value, message: +'Invalid', layer: :document, details:)
       details[:nested].first.replace('changed')
 
       expect([issue.message.frozen?, issue.details, issue.details.frozen?])
         .to eq([true, { nested: ['value'] }, true])
     end
+
+    it 'rejects unknown severity values' do
+      expect do
+        described_class.new(code: :invalid_value, message: 'Invalid', layer: :document, severity: :erroor)
+      end.to raise_error(ArgumentError, 'Unknown validation severity: :erroor')
+    end
   end
 
-  describe Facturx::Conformance::Report do
+  describe Facturx::Validation::Report do
     it 'owns an immutable issue snapshot and exposes validity predicates' do
       issues = []
       report = described_class.new(profile:, issues:)
@@ -34,9 +39,25 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
 
       expect([report.issues, report.issues.frozen?, report.valid?, report.invalid?]).to eq([[], true, true, false])
     end
+
+    it 'supports a report without a resolved profile' do
+      report = described_class.new(issues: [Facturx::Validation::Issue.new(
+        code: :invalid_xml, message: 'Invalid XML', layer: :syntax
+      )])
+
+      expect(report).to have_attributes(profile: nil, invalid?: true)
+    end
+
+    it 'ignores non-error issues when determining validity' do
+      issue = Facturx::Validation::Issue.new(
+        code: :unmapped_term, message: 'Unmapped term', layer: :document, severity: :warning
+      )
+
+      expect(described_class.new(profile:, issues: [issue])).to have_attributes(valid?: true, invalid?: false)
+    end
   end
 
-  describe Facturx::Conformance::Tracker do
+  describe FacturxSpec::ValidationTracker do
     it 'accepts a nil or matching document guideline' do
       document = Facturx::Document.new(guideline_urn: profile.guideline_urn)
 
@@ -48,7 +69,7 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
       tracker.check_guideline('urn:example:minimum', path: '/guideline')
 
       expect(issue_attributes(tracker.report.issues.first)).to include(
-        code: :profile_mismatch, term_id: 'BT-24', path: '/guideline',
+        code: :profile_mismatch, layer: :document, severity: :error, term_id: 'BT-24', path: '/guideline',
         details: { expected: profile.guideline_urn, actual: 'urn:example:minimum' }
       )
     end
@@ -97,7 +118,7 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
   end
 
   def term(id, cardinality)
-    Facturx::Term.new(
+    FacturxSpec::Term.new(
       id, :document, :invoice_number, 'BG-0', '/ram:ID', :date_102, nil,
       cardinality ? { en16931: cardinality }.freeze : {}.freeze
     )
@@ -110,7 +131,7 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
   def forbidden_term = term('BT-3', nil)
 
   def group(id, cardinality)
-    Facturx::Group.new(
+    FacturxSpec::Group.new(
       id, :document, nil, nil, '/ram:Group',
       cardinality ? { en16931: cardinality }.freeze : {}.freeze
     )
@@ -123,8 +144,10 @@ RSpec.describe Facturx::Conformance, :aggregate_failures do
   def forbidden_group = group('BG-3', nil)
 
   def formatting_error(term)
-    Facturx::Format.call('not a date', term:)
-  rescue Facturx::FormattingError => e
+    FacturxSpec::Format.call('not a date', term:)
+  rescue Facturx::Error => e
+    raise unless e.is_a?(FacturxSpec::FormattingError)
+
     e
   end
 

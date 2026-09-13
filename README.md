@@ -11,20 +11,31 @@ Use typed Ruby objects to generate XSD-valid XML, embed it into an existing PDF,
 
 ## Features
 
-| Capability | Support | API or responsibility |
-|---|:---:|---|
-| Build typed Factur-X documents | ✅ | `Facturx::Document.build` |
-| Generate Factur-X XML | ✅ | `Facturx.build_xml` |
-| Validate XML against official XSDs | ✅ | `Facturx.verify_xml` |
-| Validate typed documents | ✅ | `Facturx.validate_document` |
-| Read XML or PDF invoices | ✅ | `Facturx.read` |
-| Embed XML into an existing PDF | ✅ | `Facturx.attach` |
-| Generate PDF/A-3b Factur-X invoices | ✅ | `Facturx.generate` |
-| Extract the original embedded XML | ✅ | `Facturx.extract_xml` |
-| Schematron business rules | ⏳ | Planned |
-| Invoice calculations | ➖ | Application responsibility |
-| Visual PDF generation | ➖ | Application responsibility |
-| PDP transport and e-invoicing | ➖ | Application responsibility |
+### Main workflows
+
+| | What you need | API |
+|:---:|---|---|
+| ✅ | Generate a Factur-X invoice from typed data | `Facturx::Document.build` + `Facturx.generate` |
+| ✅ | Read an XML or PDF invoice | `Facturx.read` |
+| ✅ | Embed existing Factur-X XML into a PDF | `Facturx.attach` |
+
+### Focused tools
+
+| | Capability | API |
+|:---:|---|---|
+| ✅ | Generate Factur-X XML | `Facturx.build_xml` |
+| ✅ | Validate typed documents | `Facturx.validate_document` |
+| ✅ | Validate XML against official XSDs | `Facturx.validate_xml` |
+| ✅ | Extract the original embedded XML | `Facturx.extract_xml` |
+
+### Boundaries
+
+| | Capability | Responsibility |
+|:---:|---|---|
+| ⏳ | Schematron business rules | Planned |
+| ➖ | Invoice calculations | Application |
+| ➖ | Visual PDF generation | Application |
+| ➖ | PDP transport and e-invoicing | Application |
 
 ✅ Supported · ⏳ Planned · ➖ Intentionally handled outside the gem
 

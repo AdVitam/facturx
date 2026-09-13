@@ -34,7 +34,9 @@ RSpec.describe Gem::Specification do
   end
 
   it 'packages every schema referenced by a profile' do
-    profile_schemas = Facturx::Profiles.all.map { |profile| profile.xsd_path.delete_prefix("#{root}/") }
+    profile_schemas = Dir.glob(File.join(root, 'lib/facturx/schema/1.09.2/*/Factur-X_*.xsd'))
+                         .reject { |path| path.include?('_urn_') }
+                         .map { |path| path.delete_prefix("#{root}/") }
 
     expect(files).to include(*profile_schemas)
   end

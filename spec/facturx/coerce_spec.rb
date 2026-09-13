@@ -43,7 +43,7 @@ RSpec.describe Facturx::Coerce do
       subject(:error) do
         described_class.call('31/12/2026', type: :date_102,
                                            term_id: :'BT-2', path: '/invoice/date')
-      rescue Facturx::CoercionError => e
+      rescue FacturxSpec::CoercionError => e
         e
       end
 
@@ -57,7 +57,7 @@ RSpec.describe Facturx::Coerce do
 
     it 'rejects floats rather than silently converting them' do
       expect { described_class.call(12.3, type: :decimal) }
-        .to raise_error(Facturx::CoercionError, 'Value cannot be coerced')
+        .to raise_error(FacturxSpec::CoercionError, 'Value cannot be coerced')
     end
 
     it 'exposes unsupported types as programming errors' do

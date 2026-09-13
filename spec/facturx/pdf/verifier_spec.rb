@@ -28,7 +28,7 @@ RSpec.describe Facturx::Pdf::Verifier do
     XML
   end
   let(:result) do
-    Facturx::Pdf::Extractor::Result.new(
+    FacturxSpec::PdfExtractor::Result.new(
       xml:, filename: 'factur-x.xml', relationship: :Alternative, metadata:, page_count: 1
     )
   end

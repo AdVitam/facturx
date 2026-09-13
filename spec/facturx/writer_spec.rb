@@ -12,7 +12,7 @@ RSpec.describe Facturx::Writer do
 
       let(:minimum_profile) { Facturx::Profiles.fetch(:minimum) }
       let(:minimum_document) do
-        reading = Facturx::Reader.new.call(File.binread('spec/fixtures/xml/minimum.xml'))
+        reading = FacturxSpec::Reader.new.call(File.binread('spec/fixtures/xml/minimum.xml'))
         address = Facturx::Address.new(country_code: 'FR')
         reading.document.with(guideline_urn: nil, seller: reading.document.seller.with(address: address))
       end
@@ -26,7 +26,7 @@ RSpec.describe Facturx::Writer do
       end
 
       it 'writes schema-valid XML that reads back to the document' do
-        expect(Facturx::Reader.new.call(xml).document).to eq(
+        expect(FacturxSpec::Reader.new.call(xml).document).to eq(
           minimum_document.with(guideline_urn: minimum_profile.guideline_urn)
         )
       end
@@ -37,14 +37,14 @@ RSpec.describe Facturx::Writer do
         let(:profile) { Facturx::Profiles.fetch(profile_id) }
         let(:document) { WriterDocumentFactory.maximal_document(profile) }
         let(:xml) { writer.call(document:, profile:) }
-        let(:reading) { Facturx::Reader.new.call(xml) }
+        let(:reading) { FacturxSpec::Reader.new.call(xml) }
 
         it 'emits every modeled term representation' do
           expect(missing_term_ids(xml, profile)).to be_empty
         end
 
         it 'passes profile XSD validation' do
-          expect(Facturx.verify_xml(xml:)).to be(true)
+          expect(Facturx.validate_xml(xml:)).to be_valid
         end
 
         it 'reads every represented value back' do
@@ -104,7 +104,7 @@ RSpec.describe Facturx::Writer do
       let(:payment_nodes) do
         Nokogiri::XML(xml).xpath(
           '//ram:ApplicableHeaderTradeSettlement/ram:SpecifiedTradeSettlementPaymentMeans',
-          Facturx::Xml::Namespaces::MAP
+          FacturxSpec.internal_constant('Xml::Namespaces::MAP')
         )
       end
 
@@ -113,38 +113,39 @@ RSpec.describe Facturx::Writer do
       end
 
       it 'repeats the payment means code' do
-        expect(payment_nodes.xpath('./ram:TypeCode', Facturx::Xml::Namespaces::MAP).map(&:text))
+        expect(payment_nodes.xpath('./ram:TypeCode', FacturxSpec.internal_constant('Xml::Namespaces::MAP')).map(&:text))
           .to eq(%w[58 58])
       end
 
       it 'writes each payee account' do
         expect(payment_nodes.xpath('.//ram:PayeePartyCreditorFinancialAccount/ram:IBANID',
-                                   Facturx::Xml::Namespaces::MAP).map(&:text)).to eq(%w[FR761234 FR769999])
+                                   FacturxSpec.internal_constant('Xml::Namespaces::MAP')).map(&:text))
+          .to eq(%w[FR761234 FR769999])
       end
 
       it 'writes each provider identifier' do
-        expect(payment_nodes.xpath('.//ram:BICID', Facturx::Xml::Namespaces::MAP).map(&:text))
+        expect(payment_nodes.xpath('.//ram:BICID', FacturxSpec.internal_constant('Xml::Namespaces::MAP')).map(&:text))
           .to eq(%w[BIC BIC-2])
       end
 
       it 'writes the card only once' do
         expect(payment_nodes.xpath('.//ram:ApplicableTradeSettlementFinancialCard',
-                                   Facturx::Xml::Namespaces::MAP).size).to eq(1)
+                                   FacturxSpec.internal_constant('Xml::Namespaces::MAP')).size).to eq(1)
       end
 
       it 'writes the debtor account only once' do
         expect(payment_nodes.xpath('.//ram:PayerPartyDebtorFinancialAccount',
-                                   Facturx::Xml::Namespaces::MAP).size).to eq(1)
+                                   FacturxSpec.internal_constant('Xml::Namespaces::MAP')).size).to eq(1)
       end
 
       it 'reads each credit transfer back' do
-        transfers = Facturx::Reader.new.call(xml).document.payment.credit_transfers
+        transfers = FacturxSpec::Reader.new.call(xml).document.payment.credit_transfers
 
         expect(transfers.map { |transfer| transfer.account_identifier.value }).to eq(%w[FR761234 FR769999])
       end
 
       it 'produces no reader diagnostic' do
-        expect(Facturx::Reader.new.call(xml).diagnostics).to be_empty
+        expect(FacturxSpec::Reader.new.call(xml).diagnostics).to be_empty
       end
     end
 
@@ -162,7 +163,7 @@ RSpec.describe Facturx::Writer do
       end
 
       it 'keeps each global identifier scheme on round trip' do
-        reading = Facturx::Reader.new.call(writer.call(document:, profile:))
+        reading = FacturxSpec::Reader.new.call(writer.call(document:, profile:))
 
         expect(reading.document.seller.identifiers).to eq(identifiers)
       end
@@ -187,11 +188,12 @@ RSpec.describe Facturx::Writer do
 
       it 'omits the empty contact wrapper' do
         expect(parsed.at_xpath('//ram:SellerTradeParty/ram:DefinedTradeContact',
-                               Facturx::Xml::Namespaces::MAP)).to be_nil
+                               FacturxSpec.internal_constant('Xml::Namespaces::MAP'))).to be_nil
       end
 
       it 'omits the empty project wrapper' do
-        expect(parsed.at_xpath('//ram:SpecifiedProcuringProject', Facturx::Xml::Namespaces::MAP)).to be_nil
+        expect(parsed.at_xpath('//ram:SpecifiedProcuringProject',
+                               FacturxSpec.internal_constant('Xml::Namespaces::MAP'))).to be_nil
       end
     end
 
@@ -260,8 +262,7 @@ RSpec.describe Facturx::Writer do
           project_reference: Facturx::DocumentReference.new(id: 'PROJECT', name: ' ')
         )
 
-        expect(Facturx::Reader.new.call(writer.call(document: id_only_document, profile:)).document.project_reference)
-          .to have_attributes(id: 'PROJECT', name: 'PROJECT')
+        expect(project_reference_for(id_only_document)).to have_attributes(id: 'PROJECT', name: 'PROJECT')
       end
 
       it 'uses VAT for blank tax type codes' do
@@ -374,7 +375,7 @@ RSpec.describe Facturx::Writer do
   describe '#validate' do
     let(:minimum_profile) { Facturx::Profiles.fetch(:minimum) }
     let(:minimum_document) do
-      reading = Facturx::Reader.new.call(File.binread('spec/fixtures/xml/minimum.xml'))
+      reading = FacturxSpec::Reader.new.call(File.binread('spec/fixtures/xml/minimum.xml'))
       address = Facturx::Address.new(country_code: 'FR')
       reading.document.with(guideline_urn: nil, seller: reading.document.seller.with(address: address))
     end
@@ -396,26 +397,57 @@ RSpec.describe Facturx::Writer do
     end
 
     context 'when the document is invalid' do
-      let(:conformance_error) do
+      let(:validation_error) do
         writer.call(document: invalid_document, profile: minimum_profile)
-      rescue Facturx::ConformanceError => e
+      rescue Facturx::InvalidDocumentError => e
         e
       end
 
-      it 'raises before XSD validation' do
-        expect { writer.call(document: invalid_document, profile: minimum_profile) }
-          .to raise_error(Facturx::ConformanceError)
+      it 'raises before XSD validation', :aggregate_failures do
+        schema_validator = instance_spy(FacturxSpec::XmlSchemaValidator)
+        local_writer = described_class.new(schema_validator:)
+
+        expect { local_writer.call(document: invalid_document, profile: minimum_profile) }
+          .to raise_error(Facturx::InvalidDocumentError)
+        expect(schema_validator).not_to have_received(:call)
       end
 
       it 'exposes the aggregate report' do
-        expect(conformance_error.details.fetch(:report).invalid?).to be(true)
+        expect(validation_error.details.fetch(:report).invalid?).to be(true)
+      end
+    end
+
+    context 'when the generated XML violates the XSD' do
+      let(:schema_validator) { instance_double(FacturxSpec::XmlSchemaValidator) }
+      let(:writer) { described_class.new(schema_validator:) }
+
+      before do
+        allow(schema_validator).to receive(:call).and_raise(xsd_error)
+      end
+
+      it 'returns the structural issue from validation', :aggregate_failures do
+        report = writer.validate(document: minimum_document, profile: minimum_profile)
+
+        expect(report).to have_attributes(profile: minimum_profile, invalid?: true)
+        expect(report.issues).to contain_exactly(
+          have_attributes(code: :xsd_violation, layer: :xsd, line: 12, column: 4)
+        )
+      end
+
+      it 'raises the document error with the same report when writing', :aggregate_failures do
+        report = writer.validate(document: minimum_document, profile: minimum_profile)
+
+        expect { writer.call(document: minimum_document, profile: minimum_profile) }
+          .to raise_error(Facturx::InvalidDocumentError) do |error|
+            expect(error.details[:report]).to eq(report)
+          end
       end
     end
   end
 
   describe 'stage coverage' do
     it 'covers every modeled term' do
-      expect(described_class::MODELED_TERM_IDS).to match_array(Facturx::Terms.all.map(&:id))
+      expect(described_class::MODELED_TERM_IDS).to match_array(FacturxSpec::Terms.all.map(&:id))
     end
 
     it 'covers all 184 modeled EN16931 terms' do
@@ -424,25 +456,39 @@ RSpec.describe Facturx::Writer do
   end
 
   def raise_conformance_error_for(term_id, code: nil)
-    raise_error(Facturx::ConformanceError) do |error|
+    raise_error(Facturx::InvalidDocumentError) do |error|
       issue = code ? have_attributes(code:, term_id:) : have_attributes(term_id:)
       expect(error.details.fetch(:report).issues).to include(issue)
     end
   end
 
+  def xsd_error
+    Facturx::XsdValidationError.new(
+      'Invalid XSD', profile: :minimum,
+                     errors: [{ message: 'Missing node', line: 12, column: 4, level: 2 }]
+    )
+  end
+
+  def project_reference_for(document)
+    xml = writer.call(document:, profile:)
+    FacturxSpec::Reader.new.call(xml).document.project_reference
+  end
+
   def missing_term_ids(xml, profile)
     parsed = Nokogiri::XML(xml)
-    Facturx::Terms.for_profile(profile).filter_map do |term|
-      term.id if parsed.xpath(representative_xpath(term), Facturx::Xml::Namespaces::MAP).empty?
+    FacturxSpec::Terms.for_profile(profile).filter_map do |term|
+      term.id if parsed.xpath(representative_xpath(term),
+                              FacturxSpec.internal_constant('Xml::Namespaces::MAP')).empty?
     end
   end
 
   def minimum_tax_currency_projection(xml)
     settlement = Nokogiri::XML(xml).at_xpath(
-      '//ram:ApplicableHeaderTradeSettlement', Facturx::Xml::Namespaces::MAP
+      '//ram:ApplicableHeaderTradeSettlement', FacturxSpec.internal_constant('Xml::Namespaces::MAP')
     )
-    tax_currency = settlement.at_xpath('./ram:TaxCurrencyCode', Facturx::Xml::Namespaces::MAP)&.text
-    currencies = settlement.xpath('.//ram:TaxTotalAmount/@currencyID', Facturx::Xml::Namespaces::MAP).map(&:value)
+    namespaces = FacturxSpec.internal_constant('Xml::Namespaces::MAP')
+    tax_currency = settlement.at_xpath('./ram:TaxCurrencyCode', namespaces)&.text
+    currencies = settlement.xpath('.//ram:TaxTotalAmount/@currencyID', namespaces).map(&:value)
     [tax_currency, currencies]
   end
 
@@ -453,7 +499,7 @@ RSpec.describe Facturx::Writer do
   end
 
   def raise_unrepresentable_attribute(group_id, model, attribute)
-    raise_error(Facturx::ConformanceError) do |error|
+    raise_error(Facturx::InvalidDocumentError) do |error|
       expect(error.details.fetch(:report).issues).to include(
         have_attributes(
           code: :unrepresentable_attribute,
@@ -619,7 +665,7 @@ RSpec.describe Facturx::Writer do
   end
 
   def round_trip(document)
-    Facturx::Reader.new.call(writer.call(document:, profile:)).document
+    FacturxSpec::Reader.new.call(writer.call(document:, profile:)).document
   end
 
   def document_without_reference_values
@@ -650,14 +696,14 @@ RSpec.describe Facturx::Writer do
   def tax_type_codes(xml)
     Nokogiri::XML(xml).xpath(
       '//ram:ApplicableTradeTax/ram:TypeCode | //ram:CategoryTradeTax/ram:TypeCode',
-      Facturx::Xml::Namespaces::MAP
+      FacturxSpec.internal_constant('Xml::Namespaces::MAP')
     ).map(&:text)
   end
 
   def orphan_references(xml)
     Nokogiri::XML(xml).xpath(
       '//ram:AdditionalReferencedDocument[ram:TypeCode="50" or ram:TypeCode="130"]',
-      Facturx::Xml::Namespaces::MAP
+      FacturxSpec.internal_constant('Xml::Namespaces::MAP')
     )
   end
 end

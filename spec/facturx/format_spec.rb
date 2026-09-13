@@ -29,12 +29,12 @@ RSpec.describe Facturx::Format do
 
       it 'rejects non-String values' do
         expect { described_class.call(:invoice, term:) }
-          .to raise_error(Facturx::FormattingError, 'Value cannot be formatted')
+          .to raise_error(FacturxSpec::FormattingError, 'Value cannot be formatted')
       end
 
       it 'rejects empty and whitespace-only values' do
         expect { described_class.call(" \t\n", term:) }
-          .to raise_error(Facturx::FormattingError, 'Value cannot be formatted')
+          .to raise_error(FacturxSpec::FormattingError, 'Value cannot be formatted')
       end
     end
 
@@ -48,7 +48,7 @@ RSpec.describe Facturx::Format do
 
       it 'rejects DateTime values' do
         expect { described_class.call(DateTime.new(2026, 9, 12), term:) }
-          .to raise_error(Facturx::FormattingError)
+          .to raise_error(FacturxSpec::FormattingError)
       end
     end
 
@@ -66,7 +66,7 @@ RSpec.describe Facturx::Format do
 
       it 'rejects Float values' do
         expect { described_class.call(12.3, term:) }
-          .to raise_error(Facturx::FormattingError, 'Value cannot be formatted')
+          .to raise_error(FacturxSpec::FormattingError, 'Value cannot be formatted')
       end
     end
 
@@ -83,7 +83,7 @@ RSpec.describe Facturx::Format do
 
       it 'rejects values whose non-zero precision would be lost' do
         expect { described_class.call(BigDecimal('12.345'), term:) }
-          .to raise_error(Facturx::FormattingError, 'Value cannot be formatted')
+          .to raise_error(FacturxSpec::FormattingError, 'Value cannot be formatted')
       end
     end
 
@@ -96,7 +96,8 @@ RSpec.describe Facturx::Format do
       end
 
       it 'rejects integer boolean representations' do
-        expect { described_class.call(1, term:) }.to raise_error(Facturx::FormattingError)
+        expect { described_class.call(1, term:) }
+          .to raise_error(FacturxSpec::FormattingError)
       end
     end
 
@@ -109,7 +110,8 @@ RSpec.describe Facturx::Format do
       end
 
       it 'rejects Strings that are not binary bytes' do
-        expect { described_class.call('text', term:) }.to raise_error(Facturx::FormattingError)
+        expect { described_class.call('text', term:) }
+          .to raise_error(FacturxSpec::FormattingError)
       end
     end
 
@@ -131,13 +133,14 @@ RSpec.describe Facturx::Format do
   end
 
   def build_term(type:, scale: nil)
-    Facturx::Term.new('BT-2', :document, :issue_date, 'BG-0', '/ram:Date', type, scale,
-                      { en16931: '1..1' }.freeze)
+    FacturxSpec::Term.new(
+      'BT-2', :document, :issue_date, 'BG-0', '/ram:Date', type, scale, { en16931: '1..1' }.freeze
+    )
   end
 
   def formatting_error(value, term)
     described_class.call(value, term:)
-  rescue Facturx::FormattingError => e
+  rescue FacturxSpec::FormattingError => e
     e
   end
 
@@ -154,6 +157,6 @@ RSpec.describe Facturx::Format do
 
   def round_trip(input, type:, scale:)
     term = build_term(type:, scale:)
-    Facturx::Coerce.call(described_class.call(input, term:), type:, scale:)
+    FacturxSpec::Coerce.call(described_class.call(input, term:), type:, scale:)
   end
 end

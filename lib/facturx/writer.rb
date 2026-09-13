@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'conformance'
+require_relative 'validation'
 require_relative 'error'
 require_relative 'terms'
 require_relative 'writer/context'
@@ -12,6 +12,7 @@ require_relative 'writer/stages/trade_agreement'
 require_relative 'writer/stages/trade_delivery'
 require_relative 'writer/stages/trade_settlement'
 require_relative 'xml/schema_validator'
+require_relative 'xml/report_builder'
 
 module Facturx
   class Writer
@@ -29,7 +30,11 @@ module Facturx
       raise 'Factur-X writer stages must cover every modeled term exactly once'
     end
 
-    def initialize(schema_validator: Xml::SchemaValidator.new, tracker: Conformance::Tracker, stages: STAGES)
+    def initialize(
+      schema_validator: Xml::SchemaValidator.new,
+      tracker: Validation.const_get(:Tracker, false),
+      stages: STAGES
+    )
       @schema_validator = schema_validator
       @tracker_class = tracker
       @stages = stages.freeze
@@ -37,15 +42,14 @@ module Facturx
 
     def call(document:, profile:)
       context = compile(document:, profile:)
-      report = context.tracker.report
-      raise_conformance_error(profile, report) if report.invalid?
+      report = validate_context(context, profile)
+      raise_invalid_document(profile, report) if report.invalid?
 
-      @schema_validator.call(document: context.xml, profile:)
       context.to_xml
     end
 
     def validate(document:, profile:)
-      compile(document:, profile:).tracker.report
+      validate_context(compile(document:, profile:), profile)
     end
 
     private
@@ -58,8 +62,18 @@ module Facturx
       context
     end
 
-    def raise_conformance_error(profile, report)
-      raise ConformanceError.new(
+    def validate_context(context, profile)
+      report = context.tracker.report
+      return report if report.invalid?
+
+      @schema_validator.call(document: context.xml, profile:)
+      report
+    rescue XsdValidationError => e
+      Xml::ReportBuilder.xsd(profile, e)
+    end
+
+    def raise_invalid_document(profile, report)
+      raise InvalidDocumentError.new(
         'Factur-X document does not conform to the selected profile',
         profile: profile.id, report:, issues: report.issues
       )

@@ -17,14 +17,21 @@
 
 All PDF and XML inputs and outputs are byte strings. Facturx never interprets a string as a file path.
 
+The three primary workflows are:
+
 | Operation | API | Result |
 |---|---|---|
-| Validate XML | `Facturx.verify_xml(xml:)` | `true` or a typed error |
-| Read XML or PDF | `Facturx.read(source)` | `Facturx::Reading` |
-| Validate typed data | `Facturx.validate_document(document:, profile:)` | `Facturx::Conformance::Report` |
-| Build XML | `Facturx.build_xml(document:, profile:)` | XML bytes |
 | Build and embed XML | `Facturx.generate(pdf:, document:, profile:)` | PDF/A-3b bytes |
+| Read XML or PDF | `Facturx.read(source)` | `Facturx::Reading` |
 | Embed existing XML | `Facturx.attach(pdf:, xml:)` | PDF/A-3b bytes |
+
+Focused operations are available when the complete workflow is not needed:
+
+| Operation | API | Result |
+|---|---|---|
+| Validate XML | `Facturx.validate_xml(xml:)` | `Facturx::Validation::Report` |
+| Validate typed data | `Facturx.validate_document(document:, profile:)` | `Facturx::Validation::Report` |
+| Build XML | `Facturx.build_xml(document:, profile:)` | XML bytes |
 | Extract embedded XML | `Facturx.extract_xml(pdf:)` | Exact embedded XML bytes |
 
 ## Build an invoice
@@ -83,21 +90,21 @@ end
 Choose one of `:minimum`, `:basic_wl`, `:basic`, `:en16931`, or `:extended` when validating or generating a document:
 
 ```ruby
-report = Facturx.validate_document(document:, profile: :en16931)
-
-unless report.valid?
-  report.issues.each do |issue|
-    warn "#{issue.term_id || issue.group_id}: #{issue.message}"
-  end
-end
-
-xml = Facturx.build_xml(document:, profile: :en16931)
-
 source_pdf = File.binread('invoice.pdf')
 facturx_pdf = Facturx.generate(pdf: source_pdf, document:, profile: :en16931)
 ```
 
-`validate_document` returns every conformance issue it finds. `build_xml` and `generate` raise `Facturx::ConformanceError` with the same report in `error.details[:report]` when the document is invalid.
+`generate` performs document and XSD validation before composing the PDF. Use `validate_document` to collect every semantic issue without raising, or `build_xml` when only the XML is needed:
+
+```ruby
+report = Facturx.validate_document(document:, profile: :en16931)
+
+report.issues.each { |issue| warn issue.message } if report.invalid?
+```
+
+Alternatively, call `build_xml` directly and rescue `Facturx::InvalidDocumentError` when the report is only needed on failure.
+
+`build_xml` and `generate` raise `Facturx::InvalidDocumentError` with the same report in `error.details[:report]` when the document is invalid.
 
 The writer inserts the selected profile's canonical BT-24 guideline URN when it is absent. It reports a profile mismatch when the document contains a conflicting value. Values are serialized from their declared semantic type; monetary values with more than two decimal places are rejected rather than rounded implicitly.
 
@@ -107,10 +114,13 @@ Validate XML against the XSD selected by its BT-24 guideline URN:
 
 ```ruby
 xml = File.binread('invoice.xml')
-Facturx.verify_xml(xml:)
+report = Facturx.validate_xml(xml:)
+report.valid?
 ```
 
-`verify_xml` returns `true` or raises a typed `Facturx::Error`. It does not return a validation report.
+`validate_xml` reports malformed XML, a missing or unknown BT-24 profile, and every XSD violation without raising. Internal failures such as an unavailable bundled schema still raise a typed `Facturx::Error`.
+
+Document validation reports all semantic issues in one pass. XSD validation runs only after that semantic layer succeeds, avoiding structural noise from XML already known to be incomplete.
 
 Attach valid XML to an existing visual invoice PDF:
 
@@ -127,7 +137,7 @@ Extracting XML is deliberately independent from validation:
 
 ```ruby
 embedded_xml = Facturx.extract_xml(pdf: facturx_pdf)
-Facturx.verify_xml(xml: embedded_xml)
+Facturx.validate_xml(xml: embedded_xml)
 ```
 
 This separation keeps malformed third-party invoices inspectable.
@@ -149,7 +159,7 @@ reading.source_type
 
 Dates are `Date`, decimals are `BigDecimal`, identifiers retain their schemes, and repeating groups are frozen arrays in XML order. `source` contains the exact XML bytes and `source_type` is either `:xml` or `:pdf`.
 
-Reading is tolerant and does not run implicit XSD validation. Missing, duplicate, empty, invalid, or unmapped values produce immutable diagnostics while usable fields remain accessible. Call `verify_xml` when strict structural validation is required.
+Reading is tolerant and does not run implicit XSD validation. Missing, duplicate, empty, invalid, or unmapped values produce immutable diagnostics while usable fields remain accessible. Call `validate_xml` when structural validation is required.
 
 Unknown or missing BT-24 values fall back to the EN 16931 intersection represented by the EXTENDED profile and add a diagnostic. Reject them instead with:
 
@@ -175,23 +185,33 @@ The semantic registry covers all 184 EN 16931 business terms and the MINIMUM, BA
 
 ## Validation
 
+`validate_xml` and `validate_document` return the same immutable report. Each issue identifies its validation layer, severity, message, and available XML or business-term location. A report can therefore be inspected without rescuing expected validation failures:
+
+```ruby
+report.issues.each do |issue|
+  warn "#{issue.layer}: #{issue.term_id || issue.path} #{issue.message}"
+end
+```
+
 Generated documents pass through two layers:
 
 1. semantic conformance checks against the selected profile's business-term cardinalities and supported model mappings;
 2. structural validation against the bundled official profile XSD.
 
-Incoming XML passed to `verify_xml` is parsed, resolved to a profile from BT-24, and checked against that profile's XSD.
+Incoming XML passed to `validate_xml` is parsed, resolved to a profile from BT-24, and checked against that profile's XSD.
 
 Domain failures use a `Facturx::Error` subclass with structured context in `details`. Common errors include:
 
 | Error | Meaning |
 |---|---|
+| `Facturx::ValidationError` | Base class for strict validation failures |
 | `Facturx::InvalidXmlError` | XML cannot be parsed |
 | `Facturx::UnknownProfileError` | BT-24 is absent or unsupported during strict XML validation |
 | `Facturx::XsdValidationError` | XML does not satisfy the selected profile XSD |
 | `Facturx::UnsupportedProfileError` | A writer profile is unsupported |
-| `Facturx::FormattingError` | A typed value cannot be serialized |
-| `Facturx::ConformanceError` | A typed document violates the selected profile |
+| `Facturx::InvalidDocumentError` | A typed document violates the selected profile |
+| `Facturx::InvalidSourceError` | A reader source is not a byte `String` |
+| `Facturx::SchemaLoadError` | A bundled validation schema cannot be loaded |
 | `Facturx::ProtectedPdfError` | The source PDF is signed or encrypted |
 | `Facturx::ComposerUnavailableError` | Required Ghostscript resources are unavailable |
 | `Facturx::CompositionError` | Ghostscript composition failed |

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Add
+
+- Add structured XML and document validation reports with a shared issue model.
+- Add precise errors for invalid reader sources, invalid documents, and unavailable schemas.
+
+### Fix
+
+- Validate generated XML only once before composing and verifying the PDF.
+- Limit the supported public surface to facades, domain values, results, profiles, and emitted errors.
+- Keep profile metadata independent from the bundled schema layout.
+- Expose strict XML failures from `attach` through the shared validation report and issue model.
+
+### Del
+
+- Remove `verify_xml`, `Conformance` reports, `ConformanceError`, and direct access to implementation services.
+- Remove `Profile#xsd_path` and the public schema layout constants from `Profiles`.
+- Make the internal `Profiles` lookup constants private; use `Profiles.all`, `.fetch`, or `.for_guideline_urn`.
+
 ## [1.0.0] - 2026-09-13
 
 ### Add

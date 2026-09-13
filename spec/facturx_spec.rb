@@ -8,7 +8,7 @@ RSpec.describe Facturx do
   include PdfSupport
 
   let(:xml) { File.binread(File.expand_path('fixtures/xml/en16931.xml', __dir__)) }
-  let(:composer) { Facturx::Composers::Ghostscript.new }
+  let(:composer) { FacturxSpec::Ghostscript.new }
   let(:profile) { Facturx::Profiles.fetch(:en16931) }
   let(:maximal_document) { WriterDocumentFactory.maximal_document(profile) }
   let(:minimum_document) do
@@ -17,12 +17,17 @@ RSpec.describe Facturx do
     reading.document.with(guideline_urn: nil, seller: reading.document.seller.with(address:))
   end
 
-  it 'verifies XML through the public facade' do
-    expect(described_class.verify_xml(xml:)).to be(true)
+  it 'validates XML through the public facade' do
+    report = described_class.validate_xml(xml:)
+
+    expect(report).to have_attributes(valid?: true, profile:)
   end
 
-  it 'raises a typed error for malformed XML' do
-    expect { described_class.verify_xml(xml: '<broken') }.to raise_error(Facturx::InvalidXmlError)
+  it 'reports malformed XML through the public facade' do
+    report = described_class.validate_xml(xml: '<broken')
+
+    expect(report).to have_attributes(invalid?: true, profile: nil,
+                                      issues: include(have_attributes(layer: :syntax)))
   end
 
   it 'reads XML through the public facade' do
@@ -42,12 +47,12 @@ RSpec.describe Facturx do
       project_reference: Facturx::DocumentReference.new(name: 'Project')
     )
 
-    expect { described_class.build_xml(document:, profile:) }.to raise_conformance_error_for('BT-11')
+    expect { described_class.build_xml(document:, profile:) }.to raise_invalid_document_for('BT-11')
   end
 
   it 'delegates PDF generation through the public facade' do
     document = Facturx::Document.new
-    generator = instance_double(Facturx::Generate, call: 'generated-pdf')
+    generator = instance_double(FacturxSpec::Generate, call: 'generated-pdf')
     stub_const('Facturx::DEFAULT_GENERATOR', generator)
 
     described_class.generate(pdf: 'source-pdf', document:, profile: :minimum)
@@ -74,14 +79,14 @@ RSpec.describe Facturx do
     expect(composer).to be_available
   end
 
-  def raise_conformance_error_for(term_id)
-    raise_error(Facturx::ConformanceError) do |error|
+  def raise_invalid_document_for(term_id)
+    raise_error(Facturx::InvalidDocumentError) do |error|
       expect(error.details.fetch(:report).issues).to include(have_attributes(term_id:))
     end
   end
 
   def generate_and_read
     pdf = Facturx.generate(pdf: build_pdf, document: maximal_document, profile:)
-    Facturx.read(Facturx.extract_xml(pdf:))
+    Facturx.read(pdf)
   end
 end

@@ -10,12 +10,15 @@ module Facturx
     end
   end
 
-  class InvalidXmlError < Error; end
+  class ValidationError < Error; end
+  class InvalidDocumentError < ValidationError; end
+  class InvalidXmlError < ValidationError; end
   class UnknownProfileError < InvalidXmlError; end
   class XsdValidationError < InvalidXmlError; end
+  class SchemaLoadError < Error; end
+  class InvalidSourceError < Error; end
   class UnsupportedProfileError < Error; end
   class FormattingError < Error; end
-  class ConformanceError < Error; end
   class InvalidPdfError < Error; end
   class ProtectedPdfError < InvalidPdfError; end
   class ComposerUnavailableError < Error; end

@@ -8,8 +8,7 @@ require 'facturx/reading'
 
 RSpec.describe Facturx::Reading do
   let(:profile) do
-    Facturx::Profile.new(id: :en16931, guideline_urn: 'urn:example', xsd_path: '/schema.xsd',
-                         conformance_level: 'EN 16931')
+    Facturx::Profile.new(id: :en16931, guideline_urn: 'urn:example', conformance_level: 'EN 16931')
   end
   let(:document) { Facturx::Document.new(invoice_number: 'INV-42') }
 

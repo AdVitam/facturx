@@ -9,12 +9,11 @@ RSpec.describe Facturx::Xml::SchemaValidator do
 
   subject(:validator) { described_class.new }
 
-  let(:parser) { Facturx::Xml::Parser.new }
+  let(:parser) { FacturxSpec::XmlParser.new }
   let(:minimum_profile) { Facturx::Profiles.fetch(:minimum) }
   let(:minimum_document) { parser.call(xml: xml_fixture(:minimum)) }
   let(:missing_profile) do
-    Facturx::Profile.new(id: :missing, guideline_urn: 'urn:example:missing',
-                         xsd_path: '/missing/facturx.xsd', conformance_level: 'MISSING')
+    Facturx::Profile.new(id: :missing, guideline_urn: 'urn:example:missing', conformance_level: 'MISSING')
   end
 
   Facturx::Profiles.all.each do |profile|
@@ -44,8 +43,10 @@ RSpec.describe Facturx::Xml::SchemaValidator do
   end
 
   it 'wraps a missing schema without leaking Errno exceptions' do
-    expect { validator.call(document: minimum_document, profile: missing_profile) }
-      .to raise_error(Facturx::XsdValidationError, 'Unable to load the Factur-X missing schema')
+    registry = instance_double(FacturxSpec::XmlSchemaRegistry, fetch: '/missing/facturx.xsd')
+
+    expect { described_class.new(registry:).call(document: minimum_document, profile: missing_profile) }
+      .to raise_error(Facturx::SchemaLoadError, 'Unable to load the Factur-X missing schema')
   end
 
   it 'does not wrap schema validation failures as schema load failures' do

@@ -78,7 +78,7 @@ class WriterDocumentFactory
     end
 
     def fixture_document(profile_id)
-      Facturx::Reader.new.call(File.binread("spec/fixtures/xml/#{profile_id}.xml")).document
+      FacturxSpec::Reader.new.call(File.binread("spec/fixtures/xml/#{profile_id}.xml")).document
     end
 
     def conforming_attributes(document, profile_id)

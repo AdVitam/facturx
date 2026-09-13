@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ripper'
-require 'facturx/builders'
 
 module Facturx
   module Rbi; end
@@ -11,6 +10,29 @@ RSpec.describe Facturx::Rbi do
   subject(:source) { File.read(path) }
 
   let(:path) { File.expand_path('../../rbi/facturx.rbi', __dir__) }
+  let(:immutable_methods) { %w[initialize with] }
+  let(:immutable_types) do
+    %w[
+      Address AllowanceCharge Contact CreditTransfer Delivery Diagnostic DirectDebit Document DocumentReference
+      Identifier Line Note Party PaymentCard PaymentInstructions Period Price Product ProductAttribute
+      ProductClassification Profile Quantity Reading SupportingDocument TaxBreakdown Totals
+    ]
+  end
+  let(:public_api_declarations) do
+    [
+      'def validate_xml(xml:); end',
+      'def validate_document(document:, profile:); end',
+      'def build_xml(document:, profile:); end',
+      'def generate(pdf:, document:, profile:); end',
+      'class InvalidDocumentError < ValidationError; end',
+      'module Validation',
+      'class Issue',
+      'class Report',
+      'def self.all; end',
+      'def self.fetch(id); end',
+      'def self.for_guideline_urn(guideline_urn); end'
+    ]
+  end
 
   it 'is valid Ruby syntax' do
     expect([source.start_with?("# typed: strict\n"), Ripper.sexp(source).nil?]).to eq([true, false])
@@ -39,21 +61,50 @@ RSpec.describe Facturx::Rbi do
   end
 
   it 'declares document writing and conformance results' do
-    expect(missing_writer_declarations).to be_empty
+    expect(missing_public_api_declarations).to be_empty
+  end
+
+  it 'declares constructors and immutable updates for every public data type' do
+    expect(missing_immutable_methods).to be_empty
+  end
+
+  it 'does not declare internal services as public types' do
+    internal_types = /(?:Attach|Coerce|Composers|Format|Generate|Model|Pdf|Reader|Writer|Xml)/
+
+    expect(source).not_to match(/^  (?:class|module) #{internal_types}\b/)
   end
 
   def missing_builder_declarations
-    Facturx::Builders::Schema::ASSOCIATIONS.flat_map do |model, associations|
+    builders = Facturx.const_get(:Builders, false)
+    schema = builders.const_get(:Schema, false)
+    schema::ASSOCIATIONS.flat_map do |model, associations|
       builder = "class #{model.name.delete_prefix('Facturx::')}Builder < Base"
       helpers = associations.map { |attribute, item| "def #{item.collection ? item.helper : attribute}(" }
       [builder, *helpers].reject { |declaration| source.include?(declaration) }
     end
   end
 
-  def missing_writer_declarations
-    ['def validate_document(document:, profile:); end', 'def build_xml(document:, profile:); end',
-     'def generate(pdf:, document:, profile:); end', 'class ConformanceError < Error; end',
-     'class Issue', 'class Report'].reject { |declaration| source.include?(declaration) }
+  def missing_public_api_declarations
+    public_api_declarations.reject { |declaration| source.include?(declaration) }
+  end
+
+  def missing_immutable_methods
+    immutable_types.flat_map do |name|
+      declaration = top_level_class_declaration(name)
+      next ["class #{name}"] unless declaration
+
+      immutable_methods
+        .reject { |method| declaration.match?(/^    def #{method}\b/) }
+        .map { |method| "#{name}##{method}" }
+    end
+  end
+
+  def top_level_class_declaration(name)
+    start = source.index(/^  class #{name}\b/)
+    return unless start
+
+    finish = source.index(/^  (?:class|module)\b/, start + 1) || source.length
+    source[start...finish]
   end
 
   def attribute_declarations
