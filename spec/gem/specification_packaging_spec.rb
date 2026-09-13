@@ -22,7 +22,7 @@ RSpec.describe Gem::Specification do
       Dir['lib/**/*'].select { |path| File.file?(path) }
     end
 
-    expect(files).to include(*runtime_files, 'LICENSE.txt', 'NOTICE.md', 'README.md')
+    expect(files).to include(*runtime_files, 'DOCUMENTATION.md', 'LICENSE.txt', 'NOTICE.md', 'README.md')
   end
 
   it 'packages every RBI file' do

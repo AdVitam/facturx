@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.files = Dir.chdir(__dir__) do
     Dir['lib/**/*'].select { |path| File.file?(path) } +
       Dir['rbi/**/*'].select { |path| File.file?(path) } +
-      %w[CHANGELOG.md LICENSE.txt NOTICE.md README.md]
+      %w[CHANGELOG.md DOCUMENTATION.md LICENSE.txt NOTICE.md README.md]
   end
   spec.require_paths = ['lib']
 
