@@ -24,7 +24,10 @@ module Facturx
     def resolve(profile)
       case profile
       when Symbol then @profiles.fetch(profile)
-      when Profile then @profiles.fetch(profile.id)
+      when Profile
+        return unsupported!(profile) unless profile.id.is_a?(Symbol)
+
+        @profiles.fetch(profile.id)
       else unsupported!(profile)
       end
     end

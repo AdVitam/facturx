@@ -154,30 +154,40 @@ module Facturx
   end
 
   class Note
+    sig { returns(T.nilable(String)) }
     attr_reader :content, :subject_code
   end
 
   class Identifier
+    sig { returns(T.nilable(String)) }
     attr_reader :value, :scheme_id
   end
 
   class Period
+    sig { returns(T.nilable(::Date)) }
     attr_reader :start_date, :end_date
   end
 
   class Quantity
-    attr_reader :value, :unit_code
+    sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+    attr_reader :value
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :unit_code
   end
 
   class Contact
+    sig { returns(T.nilable(String)) }
     attr_reader :name, :telephone, :email
   end
 
   class Address
+    sig { returns(T.nilable(String)) }
     attr_reader :postcode, :line_one, :line_two, :line_three, :city, :country_code, :country_subdivision
   end
 
   class Party
+    sig { returns(T.nilable(String)) }
     attr_reader :name, :description, :trading_name
 
     sig { returns(T::Array[Facturx::Identifier]) }
@@ -203,6 +213,7 @@ module Facturx
   end
 
   class CreditTransfer
+    sig { returns(T.nilable(String)) }
     attr_reader :account_name
 
     sig { returns(T.nilable(Facturx::Identifier)) }
@@ -213,6 +224,7 @@ module Facturx
   end
 
   class PaymentCard
+    sig { returns(T.nilable(String)) }
     attr_reader :primary_account_number, :holder_name
   end
 
@@ -228,6 +240,7 @@ module Facturx
   end
 
   class PaymentInstructions
+    sig { returns(T.nilable(String)) }
     attr_reader :means_code, :means_text, :remittance_information
 
     sig { returns(T::Array[Facturx::CreditTransfer]) }
@@ -241,10 +254,15 @@ module Facturx
   end
 
   class DocumentReference
-    attr_reader :id, :line_id, :name, :issue_date
+    sig { returns(T.nilable(String)) }
+    attr_reader :id, :line_id, :name
+
+    sig { returns(T.nilable(::Date)) }
+    attr_reader :issue_date
   end
 
   class Delivery
+    sig { returns(T.nilable(::Date)) }
     attr_reader :date
 
     sig { returns(T.nilable(Facturx::Identifier)) }
@@ -255,18 +273,22 @@ module Facturx
   end
 
   class SupportingDocument
+    sig { returns(T.nilable(String)) }
     attr_reader :reference, :description, :external_location, :content, :mime_code, :filename
   end
 
   class ProductAttribute
+    sig { returns(T.nilable(String)) }
     attr_reader :name, :value
   end
 
   class ProductClassification
+    sig { returns(T.nilable(String)) }
     attr_reader :code, :list_id, :list_version_id
   end
 
   class Product
+    sig { returns(T.nilable(String)) }
     attr_reader :name, :description, :origin_country_code
 
     sig { returns(T.nilable(Facturx::Identifier)) }
@@ -286,6 +308,7 @@ module Facturx
   end
 
   class Price
+    sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
     attr_reader :amount, :discount
 
     sig { returns(T.nilable(Facturx::Quantity)) }
@@ -293,24 +316,39 @@ module Facturx
   end
 
   class TaxBreakdown
-    attr_reader :type_code, :category_code, :rate, :basis_amount, :tax_amount, :exemption_reason,
-                :exemption_reason_code, :due_date_type_code
+    sig { returns(T.nilable(String)) }
+    attr_reader :type_code, :category_code, :exemption_reason, :exemption_reason_code, :due_date_type_code
+
+    sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+    attr_reader :rate, :basis_amount, :tax_amount
   end
 
   class AllowanceCharge
-    attr_reader :indicator, :amount, :base_amount, :percentage, :reason, :reason_code
+    sig { returns(T.nilable(T::Boolean)) }
+    attr_reader :indicator
+
+    sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+    attr_reader :amount, :base_amount, :percentage
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :reason, :reason_code
 
     sig { returns(T.nilable(Facturx::TaxBreakdown)) }
     def tax; end
   end
 
   class Totals
+    sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
     attr_reader :line_total, :charge_total, :allowance_total, :tax_basis_total, :tax_total,
                 :tax_total_in_tax_currency, :grand_total, :prepaid, :rounding, :due_payable
   end
 
   class Line
-    attr_reader :id, :note, :net_amount, :buyer_accounting_reference
+    sig { returns(T.nilable(String)) }
+    attr_reader :id, :note, :buyer_accounting_reference
+
+    sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+    attr_reader :net_amount
 
     sig { returns(T.nilable(Facturx::Product)) }
     def product; end
@@ -344,9 +382,12 @@ module Facturx
   end
 
   class Document
-    attr_reader :guideline_urn, :business_process, :invoice_number, :issue_date, :type_code, :currency,
-                :tax_currency, :vat_point_date, :vat_point_date_code, :payment_due_date, :buyer_reference,
-                :buyer_accounting_reference, :payment_terms
+    sig { returns(T.nilable(String)) }
+    attr_reader :guideline_urn, :business_process, :invoice_number, :type_code, :currency, :tax_currency,
+                :vat_point_date_code, :buyer_reference, :buyer_accounting_reference, :payment_terms
+
+    sig { returns(T.nilable(::Date)) }
+    attr_reader :issue_date, :vat_point_date, :payment_due_date
 
     sig do
       params(
@@ -436,6 +477,7 @@ module Facturx
     end
 
     class NoteBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :content, :subject_code
       sig { params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: NoteBuilder).void)).returns(Note) }
       def self.build(**attributes, &block); end
@@ -444,6 +486,7 @@ module Facturx
     end
 
     class IdentifierBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :value, :scheme_id
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void))
@@ -455,6 +498,7 @@ module Facturx
     end
 
     class PeriodBuilder < Base
+      sig { returns(T.nilable(::Date)) }
       attr_accessor :start_date, :end_date
       sig { params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: PeriodBuilder).void)).returns(Period) }
       def self.build(**attributes, &block); end
@@ -463,7 +507,11 @@ module Facturx
     end
 
     class QuantityBuilder < Base
-      attr_accessor :value, :unit_code
+      sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+      attr_accessor :value
+
+      sig { returns(T.nilable(String)) }
+      attr_accessor :unit_code
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: QuantityBuilder).void))
           .returns(Quantity)
@@ -474,6 +522,7 @@ module Facturx
     end
 
     class ContactBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :name, :telephone, :email
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: ContactBuilder).void))
@@ -485,6 +534,7 @@ module Facturx
     end
 
     class AddressBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :postcode, :line_one, :line_two, :line_three, :city, :country_code, :country_subdivision
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: AddressBuilder).void))
@@ -496,19 +546,36 @@ module Facturx
     end
 
     class PartyBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :name, :description, :trading_name
-      sig { params(value: T::Array[Identifier]).returns(T::Array[Identifier]) }
+
+      sig { params(identifiers: T::Array[Identifier]).returns(T::Array[Identifier]) }
       attr_writer :identifiers
+
       sig { returns(T::Array[Identifier]) }
       attr_reader :identifiers
+
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
       def identifier(value = T.unsafe(nil), **attributes, &block); end
-      sig { params(value: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
-      attr_writer :legal_registration, :vat_identifier, :tax_identifier, :electronic_address
-      sig { params(value: T.nilable(Address)).returns(T.nilable(Address)) }
+
+      sig { params(legal_registration: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :legal_registration
+
+      sig { params(vat_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :vat_identifier
+
+      sig { params(tax_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :tax_identifier
+
+      sig { params(electronic_address: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :electronic_address
+
+      sig { params(address: T.nilable(Address)).returns(T.nilable(Address)) }
       attr_writer :address
-      sig { params(value: T.nilable(Contact)).returns(T.nilable(Contact)) }
+
+      sig { params(contact: T.nilable(Contact)).returns(T.nilable(Contact)) }
       attr_writer :contact
+
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
       def legal_registration(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: Address, attributes: T.untyped, block: T.nilable(T.proc.params(builder: AddressBuilder).void)).returns(Address) }
@@ -528,9 +595,15 @@ module Facturx
     end
 
     class CreditTransferBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :account_name
-      sig { params(value: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
-      attr_writer :account_identifier, :provider_identifier
+
+      sig { params(account_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :account_identifier
+
+      sig { params(provider_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :provider_identifier
+
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
       def account_identifier(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
@@ -545,6 +618,7 @@ module Facturx
     end
 
     class PaymentCardBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :primary_account_number, :holder_name
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: PaymentCardBuilder).void))
@@ -556,8 +630,15 @@ module Facturx
     end
 
     class DirectDebitBuilder < Base
-      sig { params(value: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
-      attr_writer :mandate_identifier, :creditor_identifier, :debtor_account_identifier
+      sig { params(mandate_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :mandate_identifier
+
+      sig { params(creditor_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :creditor_identifier
+
+      sig { params(debtor_account_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :debtor_account_identifier
+
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
       def mandate_identifier(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
@@ -574,17 +655,24 @@ module Facturx
     end
 
     class PaymentInstructionsBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :means_code, :means_text, :remittance_information
-      sig { params(value: T::Array[CreditTransfer]).returns(T::Array[CreditTransfer]) }
+
+      sig { params(credit_transfers: T::Array[CreditTransfer]).returns(T::Array[CreditTransfer]) }
       attr_writer :credit_transfers
+
       sig { returns(T::Array[CreditTransfer]) }
       attr_reader :credit_transfers
+
       sig { params(value: CreditTransfer, attributes: T.untyped, block: T.nilable(T.proc.params(builder: CreditTransferBuilder).void)).returns(CreditTransfer) }
       def credit_transfer(value = T.unsafe(nil), **attributes, &block); end
-      sig { params(value: T.nilable(PaymentCard)).returns(T.nilable(PaymentCard)) }
+
+      sig { params(payment_card: T.nilable(PaymentCard)).returns(T.nilable(PaymentCard)) }
       attr_writer :payment_card
-      sig { params(value: T.nilable(DirectDebit)).returns(T.nilable(DirectDebit)) }
+
+      sig { params(direct_debit: T.nilable(DirectDebit)).returns(T.nilable(DirectDebit)) }
       attr_writer :direct_debit
+
       sig { params(value: PaymentCard, attributes: T.untyped, block: T.nilable(T.proc.params(builder: PaymentCardBuilder).void)).returns(PaymentCard) }
       def payment_card(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: DirectDebit, attributes: T.untyped, block: T.nilable(T.proc.params(builder: DirectDebitBuilder).void)).returns(DirectDebit) }
@@ -599,7 +687,11 @@ module Facturx
     end
 
     class DocumentReferenceBuilder < Base
-      attr_accessor :id, :line_id, :name, :issue_date
+      sig { returns(T.nilable(String)) }
+      attr_accessor :id, :line_id, :name
+
+      sig { returns(T.nilable(::Date)) }
+      attr_accessor :issue_date
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: DocumentReferenceBuilder).void))
           .returns(DocumentReference)
@@ -610,11 +702,15 @@ module Facturx
     end
 
     class DeliveryBuilder < Base
+      sig { returns(T.nilable(::Date)) }
       attr_accessor :date
-      sig { params(value: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+
+      sig { params(location_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
       attr_writer :location_identifier
-      sig { params(value: T.nilable(Party)).returns(T.nilable(Party)) }
+
+      sig { params(party: T.nilable(Party)).returns(T.nilable(Party)) }
       attr_writer :party
+
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
       def location_identifier(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: Party, attributes: T.untyped, block: T.nilable(T.proc.params(builder: PartyBuilder).void)).returns(Party) }
@@ -626,6 +722,7 @@ module Facturx
     end
 
     class SupportingDocumentBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :reference, :description, :external_location, :content, :mime_code, :filename
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: SupportingDocumentBuilder).void))
@@ -637,6 +734,7 @@ module Facturx
     end
 
     class ProductAttributeBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :name, :value
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: ProductAttributeBuilder).void))
@@ -648,6 +746,7 @@ module Facturx
     end
 
     class ProductClassificationBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :code, :list_id, :list_version_id
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: ProductClassificationBuilder).void))
@@ -659,17 +758,30 @@ module Facturx
     end
 
     class ProductBuilder < Base
+      sig { returns(T.nilable(String)) }
       attr_accessor :name, :description, :origin_country_code
-      sig { params(value: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
-      attr_writer :seller_identifier, :buyer_identifier, :global_identifier
-      sig { params(value: T::Array[ProductAttribute]).returns(T::Array[ProductAttribute]) }
+
+      sig { params(seller_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :seller_identifier
+
+      sig { params(buyer_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :buyer_identifier
+
+      sig { params(global_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      attr_writer :global_identifier
+
+      sig { params(attributes: T::Array[ProductAttribute]).returns(T::Array[ProductAttribute]) }
       attr_writer :attributes
+
       sig { returns(T::Array[ProductAttribute]) }
       attr_reader :attributes
-      sig { params(value: T::Array[ProductClassification]).returns(T::Array[ProductClassification]) }
+
+      sig { params(classifications: T::Array[ProductClassification]).returns(T::Array[ProductClassification]) }
       attr_writer :classifications
+
       sig { returns(T::Array[ProductClassification]) }
       attr_reader :classifications
+
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
       def seller_identifier(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: Identifier, attributes: T.untyped, block: T.nilable(T.proc.params(builder: IdentifierBuilder).void)).returns(Identifier) }
@@ -687,9 +799,12 @@ module Facturx
     end
 
     class PriceBuilder < Base
+      sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
       attr_accessor :amount, :discount
-      sig { params(value: T.nilable(Quantity)).returns(T.nilable(Quantity)) }
+
+      sig { params(basis_quantity: T.nilable(Quantity)).returns(T.nilable(Quantity)) }
       attr_writer :basis_quantity
+
       sig { params(value: Quantity, attributes: T.untyped, block: T.nilable(T.proc.params(builder: QuantityBuilder).void)).returns(Quantity) }
       def basis_quantity(value = T.unsafe(nil), **attributes, &block); end
       sig { params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: PriceBuilder).void)).returns(Price) }
@@ -699,8 +814,11 @@ module Facturx
     end
 
     class TaxBreakdownBuilder < Base
-      attr_accessor :type_code, :category_code, :rate, :basis_amount, :tax_amount, :exemption_reason,
-                    :exemption_reason_code, :due_date_type_code
+      sig { returns(T.nilable(String)) }
+      attr_accessor :type_code, :category_code, :exemption_reason, :exemption_reason_code, :due_date_type_code
+
+      sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+      attr_accessor :rate, :basis_amount, :tax_amount
       sig do
         params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: TaxBreakdownBuilder).void))
           .returns(TaxBreakdown)
@@ -711,9 +829,18 @@ module Facturx
     end
 
     class AllowanceChargeBuilder < Base
-      attr_accessor :indicator, :amount, :base_amount, :percentage, :reason, :reason_code
-      sig { params(value: T.nilable(TaxBreakdown)).returns(T.nilable(TaxBreakdown)) }
+      sig { returns(T.nilable(T::Boolean)) }
+      attr_accessor :indicator
+
+      sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+      attr_accessor :amount, :base_amount, :percentage
+
+      sig { returns(T.nilable(String)) }
+      attr_accessor :reason, :reason_code
+
+      sig { params(tax: T.nilable(TaxBreakdown)).returns(T.nilable(TaxBreakdown)) }
       attr_writer :tax
+
       sig { params(value: TaxBreakdown, attributes: T.untyped, block: T.nilable(T.proc.params(builder: TaxBreakdownBuilder).void)).returns(TaxBreakdown) }
       def tax(value = T.unsafe(nil), **attributes, &block); end
       sig do
@@ -726,6 +853,7 @@ module Facturx
     end
 
     class TotalsBuilder < Base
+      sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
       attr_accessor :line_total, :charge_total, :allowance_total, :tax_basis_total, :tax_total,
                     :tax_total_in_tax_currency, :grand_total, :prepaid, :rounding, :due_payable
       sig { params(attributes: T.untyped, block: T.nilable(T.proc.params(builder: TotalsBuilder).void)).returns(Totals) }
@@ -735,25 +863,45 @@ module Facturx
     end
 
     class LineBuilder < Base
-      attr_accessor :id, :note, :net_amount, :buyer_accounting_reference
-      sig { params(value: T.nilable(Product)).returns(T.nilable(Product)) }
+      sig { returns(T.nilable(String)) }
+      attr_accessor :id, :note, :buyer_accounting_reference
+
+      sig { returns(T.nilable(T.any(::BigDecimal, Integer))) }
+      attr_accessor :net_amount
+
+      sig { params(product: T.nilable(Product)).returns(T.nilable(Product)) }
       attr_writer :product
-      sig { params(value: T.nilable(Quantity)).returns(T.nilable(Quantity)) }
+
+      sig { params(quantity: T.nilable(Quantity)).returns(T.nilable(Quantity)) }
       attr_writer :quantity
-      sig { params(value: T.nilable(Price)).returns(T.nilable(Price)) }
-      attr_writer :gross_price, :net_price
-      sig { params(value: T.nilable(TaxBreakdown)).returns(T.nilable(TaxBreakdown)) }
+
+      sig { params(gross_price: T.nilable(Price)).returns(T.nilable(Price)) }
+      attr_writer :gross_price
+
+      sig { params(net_price: T.nilable(Price)).returns(T.nilable(Price)) }
+      attr_writer :net_price
+
+      sig { params(tax: T.nilable(TaxBreakdown)).returns(T.nilable(TaxBreakdown)) }
       attr_writer :tax
-      sig { params(value: T.nilable(Period)).returns(T.nilable(Period)) }
+
+      sig { params(period: T.nilable(Period)).returns(T.nilable(Period)) }
       attr_writer :period
-      sig { params(value: T::Array[AllowanceCharge]).returns(T::Array[AllowanceCharge]) }
-      attr_writer :allowances, :charges
+
+      sig { params(allowances: T::Array[AllowanceCharge]).returns(T::Array[AllowanceCharge]) }
+      attr_writer :allowances
+
+      sig { params(charges: T::Array[AllowanceCharge]).returns(T::Array[AllowanceCharge]) }
+      attr_writer :charges
+
       sig { returns(T::Array[AllowanceCharge]) }
       attr_reader :allowances, :charges
-      sig { params(value: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference)) }
+
+      sig { params(buyer_order_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference)) }
       attr_writer :buyer_order_reference
-      sig { params(value: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+
+      sig { params(invoiced_object_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
       attr_writer :invoiced_object_identifier
+
       sig { params(value: Product, attributes: T.untyped, block: T.nilable(T.proc.params(builder: ProductBuilder).void)).returns(Product) }
       def product(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: Quantity, attributes: T.untyped, block: T.nilable(T.proc.params(builder: QuantityBuilder).void)).returns(Quantity) }
@@ -781,48 +929,112 @@ module Facturx
     end
 
     class DocumentBuilder < Base
-      attr_accessor :guideline_urn, :business_process, :invoice_number, :issue_date, :type_code, :currency,
-                    :tax_currency, :vat_point_date, :vat_point_date_code, :payment_due_date, :buyer_reference,
-                    :buyer_accounting_reference, :payment_terms
-      sig { params(value: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference)) }
-      attr_writer :project_reference, :contract_reference, :purchase_order_reference, :sales_order_reference,
-                  :receiving_advice_reference, :despatch_advice_reference, :tender_or_lot_reference
-      sig { params(value: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
+      sig { returns(T.nilable(String)) }
+      attr_accessor :guideline_urn, :business_process, :invoice_number, :type_code, :currency, :tax_currency,
+                    :vat_point_date_code, :buyer_reference, :buyer_accounting_reference, :payment_terms
+
+      sig { returns(T.nilable(::Date)) }
+      attr_accessor :issue_date, :vat_point_date, :payment_due_date
+
+      sig { params(project_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference)) }
+      attr_writer :project_reference
+
+      sig { params(contract_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference)) }
+      attr_writer :contract_reference
+
+      sig do
+        params(purchase_order_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference))
+      end
+      attr_writer :purchase_order_reference
+
+      sig { params(sales_order_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference)) }
+      attr_writer :sales_order_reference
+
+      sig do
+        params(receiving_advice_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference))
+      end
+      attr_writer :receiving_advice_reference
+
+      sig do
+        params(despatch_advice_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference))
+      end
+      attr_writer :despatch_advice_reference
+
+      sig do
+        params(tender_or_lot_reference: T.nilable(DocumentReference)).returns(T.nilable(DocumentReference))
+      end
+      attr_writer :tender_or_lot_reference
+
+      sig { params(invoiced_object_identifier: T.nilable(Identifier)).returns(T.nilable(Identifier)) }
       attr_writer :invoiced_object_identifier
-      sig { params(value: T.nilable(Party)).returns(T.nilable(Party)) }
-      attr_writer :seller, :buyer, :payee, :tax_representative
-      sig { params(value: T.nilable(Delivery)).returns(T.nilable(Delivery)) }
+
+      sig { params(seller: T.nilable(Party)).returns(T.nilable(Party)) }
+      attr_writer :seller
+
+      sig { params(buyer: T.nilable(Party)).returns(T.nilable(Party)) }
+      attr_writer :buyer
+
+      sig { params(payee: T.nilable(Party)).returns(T.nilable(Party)) }
+      attr_writer :payee
+
+      sig { params(tax_representative: T.nilable(Party)).returns(T.nilable(Party)) }
+      attr_writer :tax_representative
+
+      sig { params(delivery: T.nilable(Delivery)).returns(T.nilable(Delivery)) }
       attr_writer :delivery
-      sig { params(value: T.nilable(Period)).returns(T.nilable(Period)) }
+
+      sig { params(billing_period: T.nilable(Period)).returns(T.nilable(Period)) }
       attr_writer :billing_period
-      sig { params(value: T.nilable(PaymentInstructions)).returns(T.nilable(PaymentInstructions)) }
+
+      sig { params(payment: T.nilable(PaymentInstructions)).returns(T.nilable(PaymentInstructions)) }
       attr_writer :payment
-      sig { params(value: T.nilable(Totals)).returns(T.nilable(Totals)) }
+
+      sig { params(totals: T.nilable(Totals)).returns(T.nilable(Totals)) }
       attr_writer :totals
-      sig { params(value: T::Array[Note]).returns(T::Array[Note]) }
+
+      sig { params(notes: T::Array[Note]).returns(T::Array[Note]) }
       attr_writer :notes
+
       sig { returns(T::Array[Note]) }
       attr_reader :notes
-      sig { params(value: T::Array[Line]).returns(T::Array[Line]) }
+
+      sig { params(lines: T::Array[Line]).returns(T::Array[Line]) }
       attr_writer :lines
+
       sig { returns(T::Array[Line]) }
       attr_reader :lines
-      sig { params(value: T::Array[TaxBreakdown]).returns(T::Array[TaxBreakdown]) }
+
+      sig { params(tax_breakdowns: T::Array[TaxBreakdown]).returns(T::Array[TaxBreakdown]) }
       attr_writer :tax_breakdowns
+
       sig { returns(T::Array[TaxBreakdown]) }
       attr_reader :tax_breakdowns
-      sig { params(value: T::Array[AllowanceCharge]).returns(T::Array[AllowanceCharge]) }
-      attr_writer :allowances, :charges
+
+      sig { params(allowances: T::Array[AllowanceCharge]).returns(T::Array[AllowanceCharge]) }
+      attr_writer :allowances
+
+      sig { params(charges: T::Array[AllowanceCharge]).returns(T::Array[AllowanceCharge]) }
+      attr_writer :charges
+
       sig { returns(T::Array[AllowanceCharge]) }
       attr_reader :allowances, :charges
-      sig { params(value: T::Array[DocumentReference]).returns(T::Array[DocumentReference]) }
+
+      sig do
+        params(preceding_invoices: T::Array[DocumentReference]).returns(T::Array[DocumentReference])
+      end
       attr_writer :preceding_invoices
+
       sig { returns(T::Array[DocumentReference]) }
       attr_reader :preceding_invoices
-      sig { params(value: T::Array[SupportingDocument]).returns(T::Array[SupportingDocument]) }
+
+      sig do
+        params(supporting_documents: T::Array[SupportingDocument]).returns(T::Array[SupportingDocument])
+      end
       attr_writer :supporting_documents
+
       sig { returns(T::Array[SupportingDocument]) }
       attr_reader :supporting_documents
+
       sig { params(value: DocumentReference, attributes: T.untyped, block: T.nilable(T.proc.params(builder: DocumentReferenceBuilder).void)).returns(DocumentReference) }
       def project_reference(value = T.unsafe(nil), **attributes, &block); end
       sig { params(value: DocumentReference, attributes: T.untyped, block: T.nilable(T.proc.params(builder: DocumentReferenceBuilder).void)).returns(DocumentReference) }

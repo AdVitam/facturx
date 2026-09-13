@@ -32,17 +32,28 @@ RSpec.describe Facturx::Writer do
       end
     end
 
-    context 'with every modeled EN16931 term' do
-      let(:profile) { Facturx::Profiles.fetch(:en16931) }
-      let(:document) { WriterDocumentFactory.complete_document(profile) }
-      let(:reading) { Facturx::Reader.new.call(writer.call(document: document, profile: profile)) }
+    %i[minimum basic_wl basic en16931 extended].each do |profile_id|
+      context "with every modeled #{profile_id} term" do
+        let(:profile) { Facturx::Profiles.fetch(profile_id) }
+        let(:document) { WriterDocumentFactory.maximal_document(profile) }
+        let(:xml) { writer.call(document:, profile:) }
+        let(:reading) { Facturx::Reader.new.call(xml) }
 
-      it 'reads every term back' do
-        expect(reading.document).to eq(document)
-      end
+        it 'emits every modeled term representation' do
+          expect(missing_term_ids(xml, profile)).to be_empty
+        end
 
-      it 'produces no reader diagnostic' do
-        expect(reading.diagnostics).to be_empty
+        it 'passes profile XSD validation' do
+          expect(Facturx.verify_xml(xml:)).to be(true)
+        end
+
+        it 'reads every represented value back' do
+          expect(reading.document).to eq(document)
+        end
+
+        it 'produces no reader diagnostic' do
+          expect(reading.diagnostics).to be_empty
+        end
       end
     end
 
@@ -58,6 +69,23 @@ RSpec.describe Facturx::Writer do
 
       it 'writes every Factur-X profile' do
         expect(xml_documents).to all(start_with('<?xml version="1.0" encoding="UTF-8"?>'))
+      end
+    end
+
+    context 'with MINIMUM accounting currency tax' do
+      let(:profile) { Facturx::Profiles.fetch(:minimum) }
+      let(:document) { WriterDocumentFactory.maximal_document(profile) }
+      let(:xml) { writer.call(document:, profile:) }
+
+      it 'carries BT-111 currency without emitting forbidden BT-6' do
+        expect(minimum_tax_currency_projection(xml)).to eq([nil, %w[EUR USD]])
+      end
+
+      it 'rejects isolated tax currency metadata as forbidden BT-6' do
+        totals = document.totals.with(tax_total_in_tax_currency: nil)
+
+        expect { writer.call(document: document.with(totals:), profile:) }
+          .to raise_conformance_error_for('BT-6', code: :forbidden_term)
       end
     end
 
@@ -400,6 +428,28 @@ RSpec.describe Facturx::Writer do
       issue = code ? have_attributes(code:, term_id:) : have_attributes(term_id:)
       expect(error.details.fetch(:report).issues).to include(issue)
     end
+  end
+
+  def missing_term_ids(xml, profile)
+    parsed = Nokogiri::XML(xml)
+    Facturx::Terms.for_profile(profile).filter_map do |term|
+      term.id if parsed.xpath(representative_xpath(term), Facturx::Xml::Namespaces::MAP).empty?
+    end
+  end
+
+  def minimum_tax_currency_projection(xml)
+    settlement = Nokogiri::XML(xml).at_xpath(
+      '//ram:ApplicableHeaderTradeSettlement', Facturx::Xml::Namespaces::MAP
+    )
+    tax_currency = settlement.at_xpath('./ram:TaxCurrencyCode', Facturx::Xml::Namespaces::MAP)&.text
+    currencies = settlement.xpath('.//ram:TaxTotalAmount/@currencyID', Facturx::Xml::Namespaces::MAP).map(&:value)
+    [tax_currency, currencies]
+  end
+
+  def representative_xpath(term)
+    return term.xpath.sub(%r{/ram:ID\z}, '/ram:GlobalID') if %w[BT-46 BT-60 BT-71].include?(term.id)
+
+    term.xpath
   end
 
   def raise_unrepresentable_attribute(group_id, model, attribute)

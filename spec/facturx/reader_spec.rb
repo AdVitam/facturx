@@ -47,6 +47,10 @@ RSpec.describe Facturx::Reader do
     )
   end
 
+  it 'derives MINIMUM accounting tax currency from BT-111' do
+    expect(reader.call(minimum_xml_with_accounting_tax).document).to minimum_accounting_tax_document
+  end
+
   it 'preserves repeating groups in XML order' do
     notes = '<ram:IncludedNote><ram:Content>First</ram:Content></ram:IncludedNote>' \
             '<ram:IncludedNote><ram:Content>Second</ram:Content></ram:IncludedNote>'
@@ -366,6 +370,18 @@ RSpec.describe Facturx::Reader do
       .sub('20230101', 'invalid-date')
       .sub('<ram:Name>Seller Company SAS</ram:Name>', '<ram:Name> </ram:Name>')
       .sub('<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>', "<ram:Unknown>#{'x' * 300}</ram:Unknown>")
+  end
+
+  def minimum_xml_with_accounting_tax
+    tax_total = '<ram:TaxTotalAmount currencyID="EUR">20.00</ram:TaxTotalAmount>'
+    accounting_tax = '<ram:TaxTotalAmount currencyID="USD">44.00</ram:TaxTotalAmount>'
+    minimum_xml.sub(tax_total, "#{tax_total}#{accounting_tax}")
+  end
+
+  def minimum_accounting_tax_document
+    have_attributes(
+      tax_currency: 'USD', totals: have_attributes(tax_total_in_tax_currency: BigDecimal('44'))
+    )
   end
 
   def guideline_context_pattern

@@ -5,14 +5,20 @@ require 'zip'
 require_relative '../../rakelib/reference_workbook'
 
 RSpec.describe Facturx::ReferenceWorkbook do
-  subject(:cardinalities) { described_class.new(path: workbook.path).cardinalities }
+  subject(:cardinalities) { described_class.new(path: workbook.path, term_ids: %w[BT-1 BT-2]).cardinalities }
 
   let(:workbook) { build_workbook }
 
   after { workbook.close! }
 
-  it 'selects the semantic sheet and its nearest header-driven cardinality column' do
+  it 'reads the EN16931 cardinality and ignores malformed untargeted pseudo-terms' do
     expect(cardinalities).to eq('BT-1' => '1..1', 'BT-2' => '0..1')
+  end
+
+  it 'rejects a malformed cardinality for a targeted term' do
+    reader = described_class.new(path: workbook.path, term_ids: %w[BT-1 BT-2 BT-2-0])
+
+    expect { reader.cardinalities }.to raise_error(RuntimeError, /Missing cardinality for BT-2-0/)
   end
 
   def build_workbook
@@ -59,7 +65,7 @@ RSpec.describe Facturx::ReferenceWorkbook do
   def shared_strings
     <<~XML
       <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-        <si><t>ID</t></si><si><t>Cardinality</t></si><si><t>BT-1</t></si><si><t>1..1</t></si>
+        <si><t>ID</t></si><si><t>EN16931 Cardinality</t></si><si><t>BT-1</t></si><si><t>1..1</t></si>
         <si><r><t>BT-</t></r><r><t>2</t></r></si><si><t>0..n</t></si>
       </sst>
     XML
@@ -71,9 +77,10 @@ RSpec.describe Facturx::ReferenceWorkbook do
 
   def semantic_rows
     <<~XML
-      <row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="E1" t="s"><v>1</v></c></row>
+      <row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="E1" t="inlineStr"><is><t>Card.</t></is></c></row>
       <row r="2"><c r="A2" t="s"><v>2</v></c><c r="B2" t="s"><v>3</v></c><c r="E2" t="s"><v>5</v></c></row>
       <row r="3"><c r="A3" t="s"><v>4</v></c><c r="B3" t="inlineStr"><is><t>0..1</t></is></c></row>
+      <row r="4"><c r="A4" t="inlineStr"><is><t>BT-2-0</t></is></c><c r="B4" t="inlineStr"><is><t>0..1 0..1</t></is></c></row>
     XML
   end
 

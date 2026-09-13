@@ -9,6 +9,8 @@ RSpec.describe Facturx do
 
   let(:xml) { File.binread(File.expand_path('fixtures/xml/en16931.xml', __dir__)) }
   let(:composer) { Facturx::Composers::Ghostscript.new }
+  let(:profile) { Facturx::Profiles.fetch(:en16931) }
+  let(:maximal_document) { WriterDocumentFactory.maximal_document(profile) }
   let(:minimum_document) do
     reading = described_class.read(File.binread(File.expand_path('fixtures/xml/minimum.xml', __dir__)))
     address = Facturx::Address.new(country_code: 'FR')
@@ -60,6 +62,12 @@ RSpec.describe Facturx do
     expect(described_class.extract_xml(pdf: facturx_pdf)).to eq(xml.b)
   end
 
+  it 'generates, extracts, and reads a typed document through the public facade' do
+    skip 'Ghostscript Factur-X resources are unavailable' unless composer.available?
+
+    expect(generate_and_read).to have_attributes(profile:, document: maximal_document, diagnostics: [])
+  end
+
   it 'requires Ghostscript resources in CI' do
     skip 'CI-only dependency assertion' unless ENV['CI']
 
@@ -70,5 +78,10 @@ RSpec.describe Facturx do
     raise_error(Facturx::ConformanceError) do |error|
       expect(error.details.fetch(:report).issues).to include(have_attributes(term_id:))
     end
+  end
+
+  def generate_and_read
+    pdf = Facturx.generate(pdf: build_pdf, document: maximal_document, profile:)
+    Facturx.read(Facturx.extract_xml(pdf:))
   end
 end

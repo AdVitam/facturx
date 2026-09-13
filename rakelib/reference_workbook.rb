@@ -7,11 +7,12 @@ module Facturx
   class ReferenceWorkbook
     TERM_ID_PATTERN = /\ABT-\d+(?:-\d+)*\z/
     CARDINALITY_PATTERN = /\A[01]\.\.(?:1|n)\z/i
-    CARDINALITY_HEADER = /\A(?:cardinality|kardinalit[aä]t|card\.?)\z/i
+    CARDINALITY_HEADER = /\AEN16931 Cardinality\z/i
     Candidate = Data.define(:name, :entries)
 
-    def initialize(path:)
+    def initialize(path:, term_ids:)
       @path = path
+      @term_ids = term_ids.to_h { |term_id| [term_id, true] }.freeze
     end
 
     def cardinalities
@@ -58,7 +59,7 @@ module Facturx
     end
 
     def register_entry(entries, term_id, cardinality, sheet_name)
-      return unless term_id?(term_id)
+      return unless term_id?(term_id) && @term_ids.key?(term_id)
 
       normalized = cardinality&.downcase
       unless CARDINALITY_PATTERN.match?(normalized.to_s)

@@ -10,7 +10,10 @@ module Facturx
 
     def verify(references)
       references.each do |profile_id, (relative_path, _sha256)|
-        official = ReferenceWorkbook.new(path: File.join(@root, relative_path)).cardinalities
+        official = ReferenceWorkbook.new(
+          path: File.join(@root, relative_path),
+          term_ids: Terms.all.map(&:id)
+        ).cardinalities
         mismatches = mismatches(profile_id, official)
         next if mismatches.empty?
 

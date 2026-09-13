@@ -2,6 +2,7 @@
 
 require_relative 'document_factory/lines'
 require_relative 'document_factory/parties'
+require_relative 'document_factory/profiles'
 require_relative 'document_factory/settlement'
 
 class WriterDocumentFactory

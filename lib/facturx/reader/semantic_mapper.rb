@@ -21,6 +21,7 @@ module Facturx
         attributes = document_attributes(tax_breakdowns).merge(
           party_attributes, transaction_attributes, collection_attributes(tax_breakdowns.items)
         )
+        attributes[:tax_currency] ||= minimum_tax_currency(attributes[:currency])
         attributes[:totals] = totals(attributes[:currency], attributes[:tax_currency])
         Document.new(**attributes)
       end
@@ -30,6 +31,13 @@ module Facturx
       end
 
       private
+
+      def minimum_tax_currency(currency)
+        return unless @profile.id == :minimum
+
+        nodes = @document.xpath("#{group_xpath('BG-22')}/ram:TaxTotalAmount", NAMESPACES)
+        nodes.filter_map { |node| node['currencyID'] }.find { |value| value != currency }
+      end
 
       def party_attributes
         {

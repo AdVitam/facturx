@@ -34,8 +34,14 @@ module Facturx
           direct_debit = payment&.direct_debit
           emit_identifier_value('BT-90', direct_debit&.creditor_identifier, 'ram:CreditorReferenceID', parent)
           emit('BT-83', payment&.remittance_information, element: 'ram:PaymentReference', parent:)
-          emit('BT-6', document.tax_currency, element: 'ram:TaxCurrencyCode', parent:)
+          emit('BT-6', tax_currency_term_value, element: 'ram:TaxCurrencyCode', parent:)
           emit('BT-5', document.currency, element: 'ram:InvoiceCurrencyCode', parent:)
+        end
+
+        def tax_currency_term_value
+          return if profile.id == :minimum && document.totals&.tax_total_in_tax_currency
+
+          document.tax_currency
         end
 
         def emit_content(parent, payment)

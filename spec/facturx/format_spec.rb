@@ -10,6 +10,12 @@ RSpec.describe Facturx::Format do
   let(:term) { build_term(type:) }
 
   describe '.call' do
+    it 'round-trips every supported type and scale through Coerce' do
+      round_trip_cases.each do |type, scale, values|
+        values.each { |input| expect(round_trip(input, type:, scale:)).to eq(input) }
+      end
+    end
+
     context 'with a string term' do
       let(:type) { :string }
       let(:value) { +'Invoice 42' }
@@ -133,5 +139,21 @@ RSpec.describe Facturx::Format do
     described_class.call(value, term:)
   rescue Facturx::FormattingError => e
     e
+  end
+
+  def round_trip_cases
+    [
+      [:string, nil, ['Invoice 42', "Facture \u00e9mise"]],
+      [:date_102, nil, [Date.new(2026, 9, 12), Date.new(2000, 2, 29)]],
+      [:decimal, nil, [BigDecimal('0'), BigDecimal('-1234567890.123456789')]],
+      [:decimal, 2, [BigDecimal('0'), BigDecimal('-12.30'), BigDecimal('999999.99')]],
+      [:boolean, nil, [true, false]],
+      [:binary, nil, ["\x00\xFF".b, "Factur-X\x00".b]]
+    ]
+  end
+
+  def round_trip(input, type:, scale:)
+    term = build_term(type:, scale:)
+    Facturx::Coerce.call(described_class.call(input, term:), type:, scale:)
   end
 end
