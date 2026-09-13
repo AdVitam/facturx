@@ -77,13 +77,13 @@ RSpec.describe Facturx::Builders do
 
     it 'makes singular helpers write-once' do
       first = Facturx::Party.new(name: 'First')
-      builder = FacturxSpec::Builders::DocumentBuilder.new(seller: first)
+      builder = Facturx::Builders::DocumentBuilder.new(seller: first)
 
       expect { builder.seller(name: 'Second') }.to raise_error(ArgumentError, /seller is already set/)
     end
 
     it 'lets explicit singular setters replace an association' do
-      builder = FacturxSpec::Builders::DocumentBuilder.new(seller: Facturx::Party.new(name: 'First'))
+      builder = Facturx::Builders::DocumentBuilder.new(seller: Facturx::Party.new(name: 'First'))
       replacement = Facturx::Party.new(name: 'Replacement')
       builder.seller = replacement
 
@@ -91,7 +91,7 @@ RSpec.describe Facturx::Builders do
     end
 
     it 'appends collection helpers in call order' do
-      builder = FacturxSpec::Builders::DocumentBuilder.new
+      builder = Facturx::Builders::DocumentBuilder.new
       builder.line(id: '1')
       builder.line(Facturx::Line.new(id: '2'))
 
@@ -99,7 +99,7 @@ RSpec.describe Facturx::Builders do
     end
 
     it 'lets explicit collection setters replace prior items' do
-      builder = FacturxSpec::Builders::DocumentBuilder.new
+      builder = Facturx::Builders::DocumentBuilder.new
       builder.line(id: '1')
       second = Facturx::Line.new(id: '2')
       builder.lines = [second]
@@ -109,14 +109,14 @@ RSpec.describe Facturx::Builders do
 
     it 'does not retain mutable collection inputs' do
       lines = [Facturx::Line.new(id: '1')]
-      builder = FacturxSpec::Builders::DocumentBuilder.new(lines:)
+      builder = Facturx::Builders::DocumentBuilder.new(lines:)
       lines << Facturx::Line.new(id: '2')
 
       expect(builder.build.lines.map(&:id)).to eq(['1'])
     end
 
     it 'exposes a frozen empty collection snapshot' do
-      builder = FacturxSpec::Builders::DocumentBuilder.new
+      builder = Facturx::Builders::DocumentBuilder.new
       line = Facturx::Line.new(id: '1')
       snapshot = builder.lines
 
@@ -124,7 +124,7 @@ RSpec.describe Facturx::Builders do
     end
 
     it 'does not expose its initialized collection storage' do
-      builder = FacturxSpec::Builders::DocumentBuilder.new
+      builder = Facturx::Builders::DocumentBuilder.new
       line = Facturx::Line.new(id: '1')
       builder.line(line)
       snapshot = builder.lines

@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative '../error'
-require_relative '../profiles'
-
 module Facturx
   module Xml
     class SchemaRegistry
@@ -19,8 +16,6 @@ module Facturx
 
       def fetch(profile)
         PATHS.fetch(profile.id)
-      rescue KeyError
-        raise SchemaLoadError.new('Factur-X schema is unavailable', profile: profile.id)
       end
     end
   end

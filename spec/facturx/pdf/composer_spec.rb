@@ -47,7 +47,7 @@ RSpec.describe Facturx::Pdf::Composer do
   end
 
   def inspector_result_class
-    FacturxSpec::PdfInspector::Result
+    Facturx::Pdf::Inspector::Result
   end
 
   def expected_events

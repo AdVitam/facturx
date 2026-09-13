@@ -60,7 +60,7 @@ RSpec.describe Facturx::Rbi do
     expect(missing_builder_declarations).to be_empty
   end
 
-  it 'declares document writing and conformance results' do
+  it 'declares the public facade and validation results' do
     expect(missing_public_api_declarations).to be_empty
   end
 
@@ -75,9 +75,7 @@ RSpec.describe Facturx::Rbi do
   end
 
   def missing_builder_declarations
-    builders = Facturx.const_get(:Builders, false)
-    schema = builders.const_get(:Schema, false)
-    schema::ASSOCIATIONS.flat_map do |model, associations|
+    Facturx::Builders::Schema::ASSOCIATIONS.flat_map do |model, associations|
       builder = "class #{model.name.delete_prefix('Facturx::')}Builder < Base"
       helpers = associations.map { |attribute, item| "def #{item.collection ? item.helper : attribute}(" }
       [builder, *helpers].reject { |declaration| source.include?(declaration) }

@@ -58,8 +58,8 @@ RSpec.describe Facturx::Xml::Validator do
   end
 
   it 'stops before schema validation when profile detection fails' do
-    schema_validator = instance_spy(FacturxSpec::XmlSchemaValidator)
-    profile_detector = instance_double(FacturxSpec::XmlProfileDetector)
+    schema_validator = instance_spy(Facturx::Xml::SchemaValidator)
+    profile_detector = instance_double(Facturx::Xml::ProfileDetector)
     allow(profile_detector).to receive(:call).and_raise(Facturx::UnknownProfileError, 'unknown')
 
     described_class.new(profile_detector:, schema_validator:).call(xml: xml_fixture(:minimum))

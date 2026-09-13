@@ -187,6 +187,8 @@ The semantic registry covers all 184 EN 16931 business terms and the MINIMUM, BA
 
 `validate_xml` and `validate_document` return the same immutable report. Each issue identifies its validation layer, severity, message, and available XML or business-term location. A report can therefore be inspected without rescuing expected validation failures:
 
+All issues currently emitted use the `:error` severity. The `:warning` severity is reserved for planned Schematron diagnostics.
+
 ```ruby
 report.issues.each do |issue|
   warn "#{issue.layer}: #{issue.term_id || issue.path} #{issue.message}"

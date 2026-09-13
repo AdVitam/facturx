@@ -30,7 +30,7 @@ RSpec.describe Facturx::Xml::Verifier do
   def verification_error(layer)
     issue = Facturx::Validation::Issue.new(code: :invalid, message: 'Invalid', layer:)
     report = Facturx::Validation::Report.new(issues: [issue])
-    validator = instance_double(FacturxSpec::XmlValidator, call: report)
+    validator = instance_double(Facturx::Xml::Validator, call: report)
     [described_class.new(validator:).call(xml: '<xml/>'), report]
   rescue Facturx::ValidationError => e
     [e, report]

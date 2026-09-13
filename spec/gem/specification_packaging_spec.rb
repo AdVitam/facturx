@@ -34,11 +34,12 @@ RSpec.describe Gem::Specification do
   end
 
   it 'packages every schema referenced by a profile' do
-    profile_schemas = Dir.glob(File.join(root, 'lib/facturx/schema/1.09.2/*/Factur-X_*.xsd'))
-                         .reject { |path| path.include?('_urn_') }
-                         .map { |path| path.delete_prefix("#{root}/") }
+    registry = Facturx::Xml::SchemaRegistry.new
+    profile_schemas = Facturx::Profiles.all.map { |profile| registry.fetch(profile) }
 
-    expect(files).to include(*profile_schemas)
+    expect(profile_schemas)
+      .to all(satisfy { |path| File.file?(path) })
+      .and all(satisfy { |path| files.include?(path.delete_prefix("#{root}/")) })
   end
 
   it 'lists every bundled schema in the checksum manifest' do

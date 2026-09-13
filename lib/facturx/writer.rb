@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative 'validation'
 require_relative 'error'
 require_relative 'terms'
 require_relative 'writer/context'
 require_relative 'writer/stage'
+require_relative 'writer/tracker'
 require_relative 'writer/stages/document_context'
 require_relative 'writer/stages/exchanged_document'
 require_relative 'writer/stages/trade_lines'
@@ -30,14 +30,8 @@ module Facturx
       raise 'Factur-X writer stages must cover every modeled term exactly once'
     end
 
-    def initialize(
-      schema_validator: Xml::SchemaValidator.new,
-      tracker: Validation.const_get(:Tracker, false),
-      stages: STAGES
-    )
+    def initialize(schema_validator: Xml::SchemaValidator.new)
       @schema_validator = schema_validator
-      @tracker_class = tracker
-      @stages = stages.freeze
     end
 
     def call(document:, profile:)
@@ -55,10 +49,10 @@ module Facturx
     private
 
     def compile(document:, profile:)
-      tracker = @tracker_class.new(profile:)
+      tracker = Tracker.new(profile:)
       tracker.check_document(document, path: Terms.fetch('BT-24').xpath)
       context = Context.new(document:, profile:, tracker:)
-      @stages.each { |stage| stage.new(context).call }
+      STAGES.each { |stage| stage.new(context).call }
       context
     end
 

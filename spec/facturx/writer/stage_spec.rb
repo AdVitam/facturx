@@ -4,9 +4,9 @@ require 'spec_helper'
 
 RSpec.describe Facturx::Writer::Stage do
   let(:profile) { Facturx::Profiles.fetch(:minimum) }
-  let(:tracker) { FacturxSpec::ValidationTracker.new(profile:) }
+  let(:tracker) { Facturx::Writer::Tracker.new(profile:) }
   let(:context) do
-    FacturxSpec::WriterContext.new(document: Facturx::Document.new, profile:, tracker:)
+    Facturx::Writer::Context.new(document: Facturx::Document.new, profile:, tracker:)
   end
 
   context 'with a forbidden term' do

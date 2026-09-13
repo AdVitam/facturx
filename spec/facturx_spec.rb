@@ -8,7 +8,7 @@ RSpec.describe Facturx do
   include PdfSupport
 
   let(:xml) { File.binread(File.expand_path('fixtures/xml/en16931.xml', __dir__)) }
-  let(:composer) { FacturxSpec::Ghostscript.new }
+  let(:composer) { Facturx::Composers::Ghostscript.new }
   let(:profile) { Facturx::Profiles.fetch(:en16931) }
   let(:maximal_document) { WriterDocumentFactory.maximal_document(profile) }
   let(:minimum_document) do
@@ -52,7 +52,7 @@ RSpec.describe Facturx do
 
   it 'delegates PDF generation through the public facade' do
     document = Facturx::Document.new
-    generator = instance_double(FacturxSpec::Generate, call: 'generated-pdf')
+    generator = instance_double(Facturx::Generate, call: 'generated-pdf')
     stub_const('Facturx::DEFAULT_GENERATOR', generator)
 
     described_class.generate(pdf: 'source-pdf', document:, profile: :minimum)

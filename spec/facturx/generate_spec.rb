@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe Facturx::Generate do
   let(:events) { [] }
   let(:writer) do
-    instance_double(FacturxSpec::Writer).tap do |value|
+    instance_double(Facturx::Writer).tap do |value|
       allow(value).to receive(:call) { |**arguments|
         events << [:write, arguments]
         '<invoice/>'
@@ -38,6 +38,6 @@ RSpec.describe Facturx::Generate do
   end
 
   def pdf_composer_class
-    FacturxSpec::PdfComposer
+    Facturx::Pdf::Composer
   end
 end

@@ -6,7 +6,7 @@ require 'spec_helper'
 RSpec.describe Facturx::Composers::Ghostscript::Locator do
   let(:directory) { Dir.mktmpdir }
   let(:version_probe) do
-    instance_double(FacturxSpec::GhostscriptVersionProbe, call: Gem::Version.new('10.0'))
+    instance_double(Facturx::Composers::Ghostscript::VersionProbe, call: Gem::Version.new('10.0'))
   end
   let(:missing_locator) do
     described_class.new(
