@@ -96,8 +96,7 @@ RSpec.describe Facturx::Format do
       end
 
       it 'rejects integer boolean representations' do
-        expect { described_class.call(1, term:) }
-          .to raise_error(Facturx::FormattingError)
+        expect { described_class.call(1, term:) }.to raise_error(Facturx::FormattingError)
       end
     end
 
@@ -110,8 +109,7 @@ RSpec.describe Facturx::Format do
       end
 
       it 'rejects Strings that are not binary bytes' do
-        expect { described_class.call('text', term:) }
-          .to raise_error(Facturx::FormattingError)
+        expect { described_class.call('text', term:) }.to raise_error(Facturx::FormattingError)
       end
     end
 
@@ -133,9 +131,8 @@ RSpec.describe Facturx::Format do
   end
 
   def build_term(type:, scale: nil)
-    Facturx::Term.new(
-      'BT-2', :document, :issue_date, 'BG-0', '/ram:Date', type, scale, { en16931: '1..1' }.freeze
-    )
+    Facturx::Term.new('BT-2', :document, :issue_date, 'BG-0', '/ram:Date', type, scale,
+                      { en16931: '1..1' }.freeze)
   end
 
   def formatting_error(value, term)
