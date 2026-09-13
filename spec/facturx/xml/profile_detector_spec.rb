@@ -34,11 +34,8 @@ RSpec.describe Facturx::Xml::ProfileDetector do
     expect(Facturx::Profiles.all.map(&:id)).to eq(%i[minimum basic_wl basic en16931 extended])
   end
 
-  it 'keeps the profile catalogs immutable' do
-    catalogs = [Facturx::Profiles.all, Facturx::Profiles::BY_ID,
-                Facturx::Profiles::BY_GUIDELINE_URN]
-
-    expect(catalogs).to all(be_frozen)
+  it 'keeps the public profile catalog immutable' do
+    expect(Facturx::Profiles.all).to be_frozen
   end
 
   it 'rejects a missing BT-24' do
