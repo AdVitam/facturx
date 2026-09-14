@@ -30,6 +30,16 @@ RSpec.describe Facturx do
                                       issues: include(have_attributes(layer: :syntax)))
   end
 
+  it 'rejects a non-string XML source through the public facade' do
+    expect { described_class.validate_xml(xml: nil) }
+      .to raise_error(Facturx::InvalidSourceError, 'XML must be provided as a byte String')
+  end
+
+  it 'rejects a non-string XML source before attaching' do
+    expect { described_class.attach(pdf: 'source-pdf', xml: nil) }
+      .to raise_error(Facturx::InvalidSourceError, 'XML must be provided as a byte String')
+  end
+
   it 'reads XML through the public facade' do
     reading = described_class.read(xml)
     expect(reading).to have_attributes(source: xml, document: have_attributes(invoice_number: 'F-2023-004'))

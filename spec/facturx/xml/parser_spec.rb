@@ -24,7 +24,7 @@ RSpec.describe Facturx::Xml::Parser do
 
   it 'rejects values other than byte Strings' do
     expect { parser.call(xml: StringIO.new('<invoice/>')) }
-      .to raise_error(Facturx::InvalidXmlError, 'XML must be provided as a byte String')
+      .to raise_error(Facturx::InvalidSourceError, 'XML must be provided as a byte String')
   end
 
   it 'does not expand external entities' do

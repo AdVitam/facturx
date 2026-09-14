@@ -16,14 +16,6 @@ RSpec.describe Facturx::Xml::Validator do
     end
   end
 
-  it 'reports a non-string input as a syntax issue', :aggregate_failures do
-    report = validator.call(xml: nil)
-    issue = have_attributes(code: :invalid_xml, layer: :syntax, severity: :error,
-                            details: { input_class: 'NilClass' })
-
-    expect(report).to have_attributes(profile: nil, invalid?: true, issues: contain_exactly(issue))
-  end
-
   it 'reports malformed XML with its location', :aggregate_failures do
     issue = validator.call(xml: '<broken').issues.fetch(0)
 

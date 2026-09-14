@@ -118,7 +118,7 @@ report = Facturx.validate_xml(xml:)
 report.valid?
 ```
 
-`validate_xml` reports malformed XML, a missing or unknown BT-24 profile, and every XSD violation without raising. Internal failures such as an unavailable bundled schema still raise a typed `Facturx::Error`.
+`validate_xml` reports malformed XML, a missing or unknown BT-24 profile, and every XSD violation without raising. A non-`String` input raises `Facturx::InvalidSourceError`; internal failures such as an unavailable bundled schema also raise a typed `Facturx::Error`.
 
 Document validation reports all semantic issues in one pass. XSD validation runs only after that semantic layer succeeds, avoiding structural noise from XML already known to be incomplete.
 
@@ -212,7 +212,7 @@ Domain failures use a `Facturx::Error` subclass with structured context in `deta
 | `Facturx::XsdValidationError` | XML does not satisfy the selected profile XSD |
 | `Facturx::UnsupportedProfileError` | A writer profile is unsupported |
 | `Facturx::InvalidDocumentError` | A typed document violates the selected profile |
-| `Facturx::InvalidSourceError` | A reader source is not a byte `String` |
+| `Facturx::InvalidSourceError` | An XML or reader source is not a byte `String` |
 | `Facturx::SchemaLoadError` | A bundled validation schema cannot be loaded |
 | `Facturx::ProtectedPdfError` | The source PDF is signed or encrypted |
 | `Facturx::ComposerUnavailableError` | Required Ghostscript resources are unavailable |
