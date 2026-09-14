@@ -402,12 +402,12 @@ RSpec.describe Facturx::Writer do
       end
 
       it 'raises before XSD validation', :aggregate_failures do
-        schema_validator = instance_spy(Facturx::Xml::SchemaValidator)
-        local_writer = described_class.new(schema_validator:)
+        conformance_validator = instance_spy(Facturx::Xml::ConformanceValidator)
+        local_writer = described_class.new(conformance_validator:)
 
         expect { local_writer.call(document: invalid_document, profile: minimum_profile) }
           .to raise_error(Facturx::InvalidDocumentError)
-        expect(schema_validator).not_to have_received(:call)
+        expect(conformance_validator).not_to have_received(:call)
       end
 
       it 'exposes the aggregate report' do
@@ -416,11 +416,11 @@ RSpec.describe Facturx::Writer do
     end
 
     context 'when the generated XML violates the XSD' do
-      let(:schema_validator) { instance_double(Facturx::Xml::SchemaValidator) }
-      let(:writer) { described_class.new(schema_validator:) }
+      let(:conformance_validator) { instance_double(Facturx::Xml::ConformanceValidator) }
+      let(:writer) { described_class.new(conformance_validator:) }
 
       before do
-        allow(schema_validator).to receive(:call).and_raise(xsd_error)
+        allow(conformance_validator).to receive(:call).and_raise(xsd_error)
       end
 
       it 'returns the structural issue from validation', :aggregate_failures do
@@ -441,6 +441,23 @@ RSpec.describe Facturx::Writer do
           end
       end
     end
+
+    context 'when Schematron reports an issue' do
+      it 'returns the issue from document validation' do
+        issue, writer = writer_with_schematron_issue
+
+        expect(writer.validate(document: minimum_document, profile: minimum_profile).issues).to contain_exactly(issue)
+      end
+
+      it 'rejects XML generation', :aggregate_failures do
+        issue, writer = writer_with_schematron_issue
+
+        expect { writer.call(document: minimum_document, profile: minimum_profile) }
+          .to raise_error(Facturx::InvalidDocumentError) do |error|
+            expect(error.details.fetch(:report).issues).to contain_exactly(issue)
+          end
+      end
+    end
   end
 
   describe 'stage coverage' do
@@ -458,6 +475,16 @@ RSpec.describe Facturx::Writer do
       issue = code ? have_attributes(code:, term_id:) : have_attributes(term_id:)
       expect(error.details.fetch(:report).issues).to include(issue)
     end
+  end
+
+  def writer_with_schematron_issue
+    issue = Facturx::Validation::Issue.new(
+      code: :schematron_violation,
+      message: 'Business rule failed',
+      layer: :schematron
+    )
+    validator = instance_double(Facturx::Xml::ConformanceValidator, call: [issue])
+    [issue, described_class.new(conformance_validator: validator)]
   end
 
   def xsd_error

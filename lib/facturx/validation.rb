@@ -5,7 +5,7 @@ require_relative 'model/immutable'
 
 module Facturx
   module Validation
-    LAYERS = %i[syntax profile document xsd].freeze
+    LAYERS = %i[syntax profile document xsd schematron].freeze
     SEVERITIES = %i[error warning].freeze
     ISSUE_DEFAULTS = {
       severity: :error,

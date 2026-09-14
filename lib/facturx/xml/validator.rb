@@ -4,22 +4,26 @@ require_relative '../validation'
 require_relative 'parser'
 require_relative 'profile_detector'
 require_relative 'report_builder'
-require_relative 'schema_validator'
+require_relative 'conformance_validator'
 
 module Facturx
   module Xml
     class Validator
-      def initialize(parser: Parser.new, profile_detector: ProfileDetector.new, schema_validator: SchemaValidator.new)
+      def initialize(
+        parser: Parser.new,
+        profile_detector: ProfileDetector.new,
+        conformance_validator: ConformanceValidator.new
+      )
         @parser = parser
         @profile_detector = profile_detector
-        @schema_validator = schema_validator
+        @conformance_validator = conformance_validator
       end
 
       def call(xml:)
         document = @parser.call(xml:)
         profile = @profile_detector.call(document:)
-        @schema_validator.call(document:, profile:)
-        Validation::Report.new(profile:)
+        issues = @conformance_validator.call(document:, profile:)
+        Validation::Report.new(profile:, issues:)
       rescue UnknownProfileError => e
         ReportBuilder.profile(e)
       rescue XsdValidationError => e

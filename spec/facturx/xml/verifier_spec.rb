@@ -17,7 +17,8 @@ RSpec.describe Facturx::Xml::Verifier do
   {
     syntax: Facturx::InvalidXmlError,
     profile: Facturx::UnknownProfileError,
-    xsd: Facturx::XsdValidationError
+    xsd: Facturx::XsdValidationError,
+    schematron: Facturx::SchematronValidationError
   }.each do |layer, error_class|
     it "raises #{error_class} for a #{layer} validation issue", :aggregate_failures do
       error, report = verification_error(layer)
@@ -27,6 +28,13 @@ RSpec.describe Facturx::Xml::Verifier do
     end
   end
 
+  it 'raises from the first error when warnings precede it' do
+    validator = instance_double(Facturx::Xml::Validator, call: warning_before_error_report)
+
+    expect { described_class.new(validator:).call(xml: '<xml/>') }
+      .to raise_error(Facturx::SchematronValidationError, 'Error')
+  end
+
   def verification_error(layer)
     issue = Facturx::Validation::Issue.new(code: :invalid, message: 'Invalid', layer:)
     report = Facturx::Validation::Report.new(issues: [issue])
@@ -34,5 +42,15 @@ RSpec.describe Facturx::Xml::Verifier do
     [described_class.new(validator:).call(xml: '<xml/>'), report]
   rescue Facturx::ValidationError => e
     [e, report]
+  end
+
+  def warning_before_error_report
+    warning = Facturx::Validation::Issue.new(
+      code: :schematron_violation,
+      message: 'Warning',
+      layer: :schematron,
+      severity: :warning
+    )
+    Facturx::Validation::Report.new(issues: [warning, warning.with(message: 'Error', severity: :error)])
   end
 end

@@ -46,7 +46,7 @@ RSpec.describe Facturx::Composers::Ghostscript::VersionProbe do
   end
 
   def result(stdout)
-    Facturx::Composers::Ghostscript::Runner::Result.new(stdout:, stderr: '', exit_status: 0)
+    Facturx::Subprocess::Result.new(stdout:, stderr: '', exit_status: 0)
   end
 
   def unsupported_version_details

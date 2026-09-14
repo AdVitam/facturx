@@ -4,7 +4,7 @@ require 'facturx'
 
 %i[
   Attach Builders Coerce CoercionError Composers Format FormattingError Generate Group Model Pdf ProfileResolver
-  Reader SourceReader Term TermDeclarations Terms Writer Xml
+  Reader SchematronAdapter SourceReader Subprocess Term TermDeclarations Terms Writer Xml
 ].each { |name| Facturx.public_constant(name) }
 
 RSpec.configure do |config|

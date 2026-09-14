@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Add
+
+- Add optional official Schematron validation through the lightweight `facturx-schematron` companion gem.
+- Add Schematron issues and strict errors to the existing validation model for all writing and attachment workflows.
+- Add shared bounded subprocess execution for Ghostscript and SaxonC without loading optional rules in the core gem.
+
 ## [1.1.0] - 2026-09-14
 
 ### Add

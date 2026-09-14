@@ -11,7 +11,7 @@ require_relative 'writer/stages/trade_lines'
 require_relative 'writer/stages/trade_agreement'
 require_relative 'writer/stages/trade_delivery'
 require_relative 'writer/stages/trade_settlement'
-require_relative 'xml/schema_validator'
+require_relative 'xml/conformance_validator'
 require_relative 'xml/report_builder'
 
 module Facturx
@@ -30,8 +30,8 @@ module Facturx
       raise 'Factur-X writer stages must cover every modeled term exactly once'
     end
 
-    def initialize(schema_validator: Xml::SchemaValidator.new)
-      @schema_validator = schema_validator
+    def initialize(conformance_validator: Xml::ConformanceValidator.new)
+      @conformance_validator = conformance_validator
     end
 
     def call(document:, profile:)
@@ -60,8 +60,8 @@ module Facturx
       report = context.tracker.report
       return report if report.invalid?
 
-      @schema_validator.call(document: context.xml, profile:)
-      report
+      issues = @conformance_validator.call(document: context.xml, profile:)
+      report.with(issues: report.issues + issues)
     rescue XsdValidationError => e
       Xml::ReportBuilder.xsd(profile, e)
     end

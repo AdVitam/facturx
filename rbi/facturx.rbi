@@ -16,6 +16,7 @@ module Facturx
   class InvalidXmlError < ValidationError; end
   class UnknownProfileError < InvalidXmlError; end
   class XsdValidationError < InvalidXmlError; end
+  class SchematronValidationError < InvalidXmlError; end
   class SchemaLoadError < Error; end
   class InvalidSourceError < Error; end
   class UnsupportedProfileError < Error; end

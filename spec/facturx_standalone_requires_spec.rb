@@ -10,8 +10,8 @@ RSpec.describe Facturx do
       Diagnostic DirectDebit Document DocumentReference Error ExtractionError Identifier InvalidDocumentError
       InvalidPdfError InvalidSourceError InvalidXmlError Line Note Party PaymentCard PaymentInstructions Period
       Price Product ProductAttribute ProductClassification Profile Profiles ProtectedPdfError Quantity Reading
-      SchemaLoadError SupportingDocument TaxBreakdown Totals UnknownProfileError UnsupportedProfileError Validation
-      ValidationError VerificationError VERSION XsdValidationError
+      SchemaLoadError SchematronValidationError SupportingDocument TaxBreakdown Totals UnknownProfileError
+      UnsupportedProfileError Validation ValidationError VerificationError VERSION XsdValidationError
     ].sort
   end
   let(:public_methods) { %w[attach build_xml extract_xml generate read validate_document validate_xml] }

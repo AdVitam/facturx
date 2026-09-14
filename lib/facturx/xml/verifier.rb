@@ -8,7 +8,8 @@ module Facturx
       ERROR_CLASSES = {
         syntax: InvalidXmlError,
         profile: UnknownProfileError,
-        xsd: XsdValidationError
+        xsd: XsdValidationError,
+        schematron: SchematronValidationError
       }.freeze
       private_constant :ERROR_CLASSES
 
@@ -20,7 +21,7 @@ module Facturx
         report = @validator.call(xml:)
         return report.profile if report.valid?
 
-        issue = report.issues.first
+        issue = report.issues.find { |candidate| candidate.severity == :error }
         error_class = ERROR_CLASSES.fetch(issue.layer)
         raise error_class.new(issue.message, report:, issues: report.issues)
       end

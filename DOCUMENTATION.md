@@ -193,14 +193,44 @@ report.issues.each do |issue|
 end
 ```
 
-All issues currently emitted use the `:error` severity. The `:warning` severity is reserved for planned Schematron diagnostics.
+Core validation issues use the `:error` severity. The optional Schematron validator also preserves official `:warning` findings, which do not invalidate a report.
 
-Generated documents pass through two layers:
+Generated documents always pass through two layers:
 
 1. semantic conformance checks against the selected profile's business-term cardinalities and supported model mappings;
 2. structural validation against the bundled official profile XSD.
 
-Incoming XML passed to `validate_xml` is parsed, resolved to a profile from BT-24, and checked against that profile's XSD.
+Incoming XML passed to `validate_xml` is parsed, resolved to a profile from BT-24, and checked against that profile's XSD. When enabled, Schematron runs after these core checks as a third validation layer.
+
+### Optional Schematron validation
+
+Install the companion gem to add the official Factur-X 1.09.2 business rules without increasing the core gem's package or runtime footprint:
+
+```ruby
+gem 'facturx'
+gem 'facturx-schematron', require: 'facturx/schematron'
+```
+
+Alternatively, require it explicitly after Bundler setup:
+
+```ruby
+require 'facturx'
+require 'facturx/schematron'
+```
+
+Loading the companion enables Schematron after XSD validation for `validate_xml`, `validate_document`, `attach`, `build_xml`, and `generate`. Public method signatures and report types remain unchanged. `read` stays tolerant and does not validate implicitly.
+
+The companion requires SaxonC-HE's `Transform` executable, version 12.10 or newer. Put it in `PATH`, or provide its absolute path:
+
+```bash
+export FACTURX_SAXONC_TRANSFORM=/opt/saxonc/bin/Transform
+```
+
+Loading fails immediately with `Facturx::Schematron::UnavailableError` when the executable is missing, cannot start, or is unsupported. Runtime engine failures raise `Facturx::Schematron::ExecutionError`; they never fall back silently to XSD-only validation.
+
+Schematron findings use the `:schematron` layer and expose the official rule ID, test, and flag in `issue.details`. Official warnings keep reports valid; assertions without a warning flag are errors. Strict XML workflows raise `Facturx::SchematronValidationError` for blocking findings.
+
+The companion ships only the five official compiled XSLT stylesheets and adjacent code databases. Each successful validation starts one isolated SaxonC subprocess, so applications processing large batches should account for native process startup and memory in their worker sizing.
 
 Domain failures use a `Facturx::Error` subclass with structured context in `details`. Common errors include:
 
@@ -210,6 +240,7 @@ Domain failures use a `Facturx::Error` subclass with structured context in `deta
 | `Facturx::InvalidXmlError` | XML cannot be parsed |
 | `Facturx::UnknownProfileError` | BT-24 is absent or unsupported during strict XML validation |
 | `Facturx::XsdValidationError` | XML does not satisfy the selected profile XSD |
+| `Facturx::SchematronValidationError` | XML violates an enabled Schematron business rule |
 | `Facturx::UnsupportedProfileError` | A writer profile is unsupported |
 | `Facturx::InvalidDocumentError` | A typed document violates the selected profile |
 | `Facturx::InvalidSourceError` | An XML or reader source is not a byte `String` |
@@ -220,7 +251,7 @@ Domain failures use a `Facturx::Error` subclass with structured context in `deta
 | `Facturx::ExtractionError` | The embedded Factur-X XML cannot be selected or decoded |
 | `Facturx::VerificationError` | The composed PDF does not match the requested invoice |
 
-XSD validation is not complete regulatory validation. Facturx does not yet run the official Schematron business rules, calculate totals, or evaluate accounting consistency.
+XSD validation alone is not complete regulatory validation. The optional companion runs the official Schematron rules, but Facturx does not calculate invoice values or replace application-level accounting controls.
 
 ## PDF composition
 
@@ -238,7 +269,7 @@ export FACTURX_ZUGFERD_PS=/opt/ghostscript/share/ghostscript/lib/zugferd.ps
 export FACTURX_ICC_PROFILE=/opt/ghostscript/share/ghostscript/iccprofiles/default_rgb.icc
 ```
 
-The composer invokes Ghostscript as an external process with a timeout, bounded output capture, and file access restricted to its staged inputs and outputs.
+The composer invokes Ghostscript as an external process with a timeout, bounded output capture, and file access restricted to its staged inputs and outputs. The optional Schematron integration reuses the same bounded process lifecycle for SaxonC.
 
 Facturx does not create the visual invoice. The supplied PDF remains the visual source that is converted to PDF/A-3b and enriched with Factur-X XML and metadata.
 
@@ -260,8 +291,8 @@ Facturx does not communicate with a PDP or implement e-invoicing transport. Netw
 mise install
 bundle install
 bundle exec rubocop
-bundle exec rspec
-bundle exec rake build
+bundle exec rake
+bundle exec rake build_all
 ```
 
 Maintainers can compare the semantic registry, D22B mappings, diagnostics, official XML examples, and paired PDF attachments with an extracted upstream package:
