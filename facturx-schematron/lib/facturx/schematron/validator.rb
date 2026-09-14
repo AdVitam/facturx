@@ -33,7 +33,7 @@ module Facturx
       end
 
       def preflight!
-        @config ||= @locator.preflight!
+        @locator.preflight!
         self
       end
 
@@ -53,11 +53,11 @@ module Facturx
       private
 
       def transform(document, profile)
-        config = @config || @locator.preflight!
+        config = @locator.preflight!
         rule_set = @registry.fetch(profile)
         @runner.call(
           arguments(config.binary, rule_set.stylesheet),
-          input: document.root.to_xml,
+          input: document.root.to_xml(encoding: 'UTF-8'),
           chdir: rule_set.directory
         )
       end

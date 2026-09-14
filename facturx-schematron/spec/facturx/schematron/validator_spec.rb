@@ -47,11 +47,18 @@ RSpec.describe Facturx::Schematron::Validator do
     expect(validator.preflight!).to equal(validator)
   end
 
-  it 'caches the engine configuration' do
-    validator.preflight!
-    validator.call(document:, profile:)
+  it 'delegates repeated preflights to the locator' do
+    2.times { validator.preflight! }
 
-    expect(locator).to have_received(:preflight!).once
+    expect(locator).to have_received(:preflight!).twice
+  end
+
+  it 'serializes non-UTF-8 XML as UTF-8 for SaxonC' do
+    validator.call(document: iso_8859_1_document, profile:)
+
+    expect(runner).to have_received(:call).once.with(
+      expected_arguments, input: valid_utf8_invoice, chdir: rule_set.directory
+    )
   end
 
   it 'raises a typed execution error on nonzero exit' do
@@ -98,6 +105,21 @@ RSpec.describe Facturx::Schematron::Validator do
       parsed = Nokogiri::XML::Document.parse(input)
       parsed.at_xpath('/invoice/id')&.text == '42' && !input.include?('<!DOCTYPE')
     end
+  end
+
+  def iso_8859_1_document
+    xml = "<?xml version='1.0' encoding='ISO-8859-1'?><invoice><id>é</id></invoice>"
+    Nokogiri::XML::Document.parse(xml.encode(Encoding::ISO_8859_1))
+  end
+
+  def valid_utf8_invoice
+    satisfy do |input|
+      input.encoding == Encoding::UTF_8 && input.valid_encoding? && invoice_id(input) == 'é'
+    end
+  end
+
+  def invoice_id(xml)
+    Nokogiri::XML::Document.parse(xml).at_xpath('/invoice/id')&.text
   end
 
   def execution_error
