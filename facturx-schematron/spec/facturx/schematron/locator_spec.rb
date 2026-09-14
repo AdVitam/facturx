@@ -2,6 +2,7 @@
 
 require 'tmpdir'
 require 'fileutils'
+require 'rbconfig'
 require_relative '../../spec_helper'
 require 'facturx/schematron/locator'
 
@@ -20,9 +21,9 @@ RSpec.describe Facturx::Schematron::Locator do
 
   it 'prefers the explicit environment override' do
     binary = executable('custom-transform')
-    config = locator(env: { 'FACTURX_SAXONC_TRANSFORM' => binary, 'PATH' => directory }).preflight!
+    resolved = locator(env: { 'FACTURX_SAXONC_TRANSFORM' => binary, 'PATH' => directory }).preflight!
 
-    expect(config).to have_attributes(binary:, version: Gem::Version.new('12.10'))
+    expect(resolved).to eq(binary)
   end
 
   it 'probes the resolved executable once' do
@@ -36,7 +37,7 @@ RSpec.describe Facturx::Schematron::Locator do
   it 'finds Transform on PATH' do
     binary = executable('Transform')
 
-    expect(locator(env: { 'PATH' => directory }).preflight!.binary).to eq(binary)
+    expect(locator(env: { 'PATH' => directory }).preflight!).to eq(binary)
   end
 
   it 'rejects a missing executable' do
@@ -59,6 +60,13 @@ RSpec.describe Facturx::Schematron::Locator do
     expect(error.details[:reason]).to eq(:probe_failed)
   end
 
+  it 'preserves sanitized timeout diagnostics from the probe' do
+    allow(runner).to receive(:call).and_raise(timeout_error)
+    error = unavailable_error { locator(env: { 'PATH' => directory }).preflight! }
+
+    expect(error.details.dig(:probe_error, :stderr)).to eq('?')
+  end
+
   def locator(env:)
     executable('Transform') unless env['FACTURX_SAXONC_TRANSFORM'] || env['PATH'].to_s.empty?
     described_class.new(runner:, env:)
@@ -74,6 +82,13 @@ RSpec.describe Facturx::Schematron::Locator do
   def unavailable_error
     yield
   rescue Facturx::Schematron::UnavailableError => e
+    e
+  end
+
+  def timeout_error
+    runner = Facturx::Subprocess::Runner.new(timeout: 0.2, termination_grace: 0.05)
+    runner.call([RbConfig.ruby, '-e', 'STDERR.binmode; STDERR.write("\\xFF".b); sleep 10'])
+  rescue Facturx::Subprocess::Error => e
     e
   end
 end

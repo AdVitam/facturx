@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../spec_helper'
+require 'rbconfig'
 require 'facturx/schematron/validator'
 
 RSpec.describe Facturx::Schematron::Validator do
@@ -25,7 +26,7 @@ RSpec.describe Facturx::Schematron::Validator do
   end
 
   before do
-    allow(locator).to receive(:preflight!).and_return(Struct.new(:binary).new('/usr/bin/Transform'))
+    allow(locator).to receive(:preflight!).and_return('/usr/bin/Transform')
     allow(registry).to receive(:fetch).with(profile).and_return(rule_set)
     allow(runner).to receive(:call).and_return(process_result)
     allow(parser).to receive(:call).with(svrl: '<svrl/>').and_return(issues)
@@ -75,17 +76,11 @@ RSpec.describe Facturx::Schematron::Validator do
     expect(error.details).to include(reason: :output_limit, stream: :stdout)
   end
 
-  it 'parses valid output when only stderr is truncated' do
-    allow(runner).to receive(:call).and_return(process_result(stderr_truncated: true))
-
-    expect(validator.call(document:, profile:)).to eq(issues)
-  end
-
   it 'wraps subprocess failures without leaking internal errors' do
     allow(runner).to receive(:call).and_raise(subprocess_error)
     error = execution_error { validator.call(document:, profile:) }
 
-    expect(error.details).to eq(reason: :timeout, subprocess_error: { reason: :timeout, timeout: 2 })
+    expect(error.details).to eq(reason: :timeout, subprocess_error: { reason: :timeout, timeout: 0.2, stderr: '?' })
   end
 
   def runner = dependencies.fetch(:runner)
@@ -102,10 +97,8 @@ RSpec.describe Facturx::Schematron::Validator do
     )
   end
 
-  def process_result(stdout: '<svrl/>', stderr: '', exit_status: 0, stdout_truncated: false, stderr_truncated: false)
-    Struct.new(:stdout, :stderr, :exit_status, :stdout_truncated, :stderr_truncated).new(
-      stdout, stderr, exit_status, stdout_truncated, stderr_truncated
-    )
+  def process_result(stdout: '<svrl/>', stderr: '', exit_status: 0, stdout_truncated: false)
+    Struct.new(:stdout, :stderr, :exit_status, :stdout_truncated).new(stdout, stderr, exit_status, stdout_truncated)
   end
 
   def expected_arguments
@@ -144,6 +137,9 @@ RSpec.describe Facturx::Schematron::Validator do
   end
 
   def subprocess_error
-    Facturx.const_get(:Subprocess).const_get(:Error).new('Timed out', reason: :timeout, timeout: 2)
+    runner = Facturx::Subprocess::Runner.new(timeout: 0.2, termination_grace: 0.05)
+    runner.call([RbConfig.ruby, '-e', 'STDERR.binmode; STDERR.write("\\xFF".b); sleep 10'])
+  rescue Facturx::Subprocess::Error => e
+    e
   end
 end

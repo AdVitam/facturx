@@ -6,7 +6,6 @@ require_relative 'version_probe'
 module Facturx
   module Schematron
     class Locator
-      Config = Data.define(:binary, :version)
       ENV_KEY = 'FACTURX_SAXONC_TRANSFORM'
       BINARY_NAME = 'Transform'
       private_constant :ENV_KEY, :BINARY_NAME
@@ -22,7 +21,8 @@ module Facturx
           binary = resolve_binary
           raise_missing unless binary
 
-          Config.new(binary:, version: @version_probe.call(binary))
+          @version_probe.call(binary)
+          binary
         end
       end
 

@@ -54,10 +54,10 @@ module Facturx
       private
 
       def transform(document, profile)
-        config = @locator.preflight!
+        binary = @locator.preflight!
         rule_set = @registry.fetch(profile)
         @runner.call(
-          arguments(config.binary, rule_set.stylesheet),
+          arguments(binary, rule_set.stylesheet),
           input: document.root.to_xml(encoding: 'UTF-8'),
           chdir: rule_set.directory
         )

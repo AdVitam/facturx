@@ -6,7 +6,7 @@ require_relative 'error'
 
 module Facturx
   module Subprocess
-    Result = Data.define(:stdout, :stderr, :exit_status, :stdout_truncated, :stderr_truncated)
+    Result = Data.define(:stdout, :stderr, :exit_status, :stdout_truncated)
 
     class Error < Facturx::Error; end
 
@@ -108,8 +108,7 @@ module Facturx
           stdout: stdout.content,
           stderr: stderr.content,
           exit_status: status.exitstatus || (128 + status.termsig),
-          stdout_truncated: stdout.truncated,
-          stderr_truncated: stderr.truncated
+          stdout_truncated: stdout.truncated
         )
       end
 
@@ -121,7 +120,7 @@ module Facturx
           "Process timed out after #{@timeout} seconds",
           reason: :timeout,
           timeout: @timeout,
-          stderr: stderr_reader.value.content
+          stderr: sanitize(stderr_reader.value.content)
         )
       end
 
@@ -131,6 +130,10 @@ module Facturx
 
         signal('KILL', wait_thread.pid)
         wait_thread.join
+      end
+
+      def sanitize(output)
+        output.to_s.encode(Encoding::UTF_8, invalid: :replace, undef: :replace, replace: '?')
       end
 
       def signal(name, pid)

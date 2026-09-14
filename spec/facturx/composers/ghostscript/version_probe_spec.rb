@@ -47,7 +47,7 @@ RSpec.describe Facturx::Composers::Ghostscript::VersionProbe do
 
   def result(stdout)
     Facturx::Subprocess::Result.new(
-      stdout:, stderr: '', exit_status: 0, stdout_truncated: false, stderr_truncated: false
+      stdout:, stderr: '', exit_status: 0, stdout_truncated: false
     )
   end
 

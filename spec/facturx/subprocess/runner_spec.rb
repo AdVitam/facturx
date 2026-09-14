@@ -14,25 +14,22 @@ RSpec.describe Facturx::Subprocess::Runner do
     expect(result.to_h).to eq(expected_result(stdout: '', stderr: 'failure', exit_status: 9))
   end
 
-  it 'bounds captured output and tracks truncation per stream' do
+  it 'keeps normal output as raw bytes' do
+    result = described_class.new.call(raw_output_command)
+
+    expect(result.to_h).to eq(expected_result(stdout: "\xFF".b, stderr: "\xFE".b))
+  end
+
+  it 'bounds captured output and tracks stdout truncation' do
     result = described_class.new(output_limit: 32).call(ruby_command('STDOUT.write("x" * 1_000); STDERR.write("ok")'))
 
     expect(result.to_h).to eq(expected_result(stdout: truncated_output, stderr: 'ok', stdout_truncated: true))
   end
 
-  it 'tracks stderr truncation separately' do
-    result = described_class.new(output_limit: 32).call(ruby_command('STDOUT.write("ok"); STDERR.write("x" * 1_000)'))
+  it 'sanitizes stderr in timeout errors' do
+    error = timeout_error('STDERR.binmode; STDERR.write("\\xFF".b); sleep 10')
 
-    expect(result.to_h).to eq(expected_result(stdout: 'ok', stderr: truncated_output, stderr_truncated: true))
-  end
-
-  it 'terminates processes that exceed the timeout', :aggregate_failures do
-    runner = described_class.new(timeout: 0.05, termination_grace: 0.05)
-
-    expect { runner.call(ruby_command('sleep 10')) }
-      .to raise_error(Facturx::Subprocess::Error) do |error|
-        expect(error.details).to include(reason: :timeout, timeout: 0.05)
-      end
+    expect(error.details).to include(reason: :timeout, timeout: 0.2, stderr: '?')
   end
 
   def configured_execution
@@ -48,7 +45,22 @@ RSpec.describe Facturx::Subprocess::Runner do
     "#{'x' * 18}...[truncated]"
   end
 
-  def expected_result(stdout:, stderr: '', exit_status: 0, stdout_truncated: false, stderr_truncated: false)
-    { stdout:, stderr:, exit_status:, stdout_truncated:, stderr_truncated: }
+  def raw_output_command
+    ruby_command(<<~RUBY)
+      STDOUT.binmode
+      STDERR.binmode
+      STDOUT.write("\\xFF".b)
+      STDERR.write("\\xFE".b)
+    RUBY
+  end
+
+  def expected_result(stdout:, stderr: '', exit_status: 0, stdout_truncated: false)
+    { stdout:, stderr:, exit_status:, stdout_truncated: }
+  end
+
+  def timeout_error(program)
+    described_class.new(timeout: 0.2, termination_grace: 0.05).call(ruby_command(program))
+  rescue Facturx::Subprocess::Error => e
+    e
   end
 end
