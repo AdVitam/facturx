@@ -10,8 +10,7 @@ module Facturx
       BINARY_NAME = 'Transform'
       private_constant :ENV_KEY, :BINARY_NAME
 
-      def initialize(runner:, binary: nil, env: ENV)
-        @binary = binary
+      def initialize(runner:, env: ENV)
         @env = env
         @version_probe = VersionProbe.new(runner:)
       end
@@ -29,7 +28,7 @@ module Facturx
       private
 
       def resolve_binary
-        configured = @binary || @env[ENV_KEY]
+        configured = @env[ENV_KEY]
         return find_executable(configured) if configured && !configured.empty?
 
         find_executable(BINARY_NAME)
