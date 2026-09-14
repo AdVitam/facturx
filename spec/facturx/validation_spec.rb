@@ -22,6 +22,12 @@ RSpec.describe Facturx::Validation, :aggregate_failures do
         described_class.new(code: :invalid_value, message: 'Invalid', layer: :document, severity: :erroor)
       end.to raise_error(ArgumentError, 'Unknown validation severity: :erroor')
     end
+
+    it 'accepts Schematron as a validation layer' do
+      issue = described_class.new(code: :schematron_violation, message: 'Invalid', layer: :schematron)
+
+      expect(issue.layer).to eq(:schematron)
+    end
   end
 
   describe Facturx::Validation::Report do

@@ -1,0 +1,2 @@
+facturx-schematron/lib/facturx/schematron/rules/1.09.2/** -text -whitespace
+facturx-schematron/spec/fixtures/xml/*.xml -text -whitespace

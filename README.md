@@ -26,39 +26,42 @@ Use typed Ruby objects to generate XSD-valid XML, embed it into an existing PDF,
 | ✅ | Generate Factur-X XML | `Facturx.build_xml` |
 | ✅ | Validate typed documents | `Facturx.validate_document` |
 | ✅ | Validate XML against official XSDs | `Facturx.validate_xml` |
+| 🔌 | Add official Schematron business-rule validation | `facturx-schematron` |
 | ✅ | Extract the original embedded XML | `Facturx.extract_xml` |
 
 ### Boundaries
 
 | | Capability | Responsibility |
 |:---:|---|---|
-| ⏳ | Schematron business rules | Planned |
 | ➖ | Invoice calculations | Application |
 | ➖ | Visual PDF generation | Application |
 | ➖ | PDP transport and e-invoicing | Application |
 
-✅ Supported · ⏳ Planned · ➖ Intentionally handled outside the gem
+✅ Included · 🔌 Optional companion · ➖ Intentionally handled outside the gem
 
 ## Supported profiles
 
 Facturx supports Factur-X 1.09.2 / ZUGFeRD 2.5.2.
 
-| Profile | Read | Build | XSD validation |
-|---|:---:|:---:|:---:|
-| MINIMUM | ✅ | ✅ | ✅ |
-| BASIC WL | ✅ | ✅ | ✅ |
-| BASIC | ✅ | ✅ | ✅ |
-| EN 16931 | ✅ | ✅ | ✅ |
-| EXTENDED | ✅* | ✅* | ✅ |
+| Profile | Read | Build | XSD | Schematron** |
+|---|:---:|:---:|:---:|:---:|
+| MINIMUM | ✅ | ✅ | ✅ | ✅ |
+| BASIC WL | ✅ | ✅ | ✅ | ✅ |
+| BASIC | ✅ | ✅ | ✅ | ✅ |
+| EN 16931 | ✅ | ✅ | ✅ | ✅ |
+| EXTENDED | ✅* | ✅* | ✅ | ✅ |
 
 \* EXTENDED-only fields that are not represented by the typed model remain available in the original XML and are reported through diagnostics.
+
+\** Available through the optional `facturx-schematron` gem.
 
 ## Requirements
 
 - Ruby 3.2 or newer
 - Ghostscript 9.54 or newer, `zugferd.ps`, and an RGB ICC profile for PDF composition only
+- SaxonC-HE 12.10 or newer only when `facturx-schematron` is enabled
 
-XML building, reading, extraction, and validation require no external executable.
+Core XML building, reading, extraction, and XSD validation require no external executable.
 
 ## Quick start
 
@@ -104,6 +107,7 @@ See [DOCUMENTATION.md](DOCUMENTATION.md) to:
 - validate or attach existing XML;
 - read invoices and handle diagnostics;
 - understand profiles, validation boundaries, and typed errors;
+- enable official Schematron business-rule validation;
 - configure Ghostscript for PDF/A-3b composition.
 
 ## License

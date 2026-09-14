@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-14
+
+### Add
+
+- Add optional official Schematron validation through the lightweight `facturx-schematron` companion gem.
+- Add Schematron issues and strict errors to the existing validation model for all writing and attachment workflows.
+- Add shared bounded subprocess execution for Ghostscript and SaxonC without loading optional rules in the core gem.
+
+### Fix
+
+- Preserve non-UTF-8 invoice text when passing parsed XML to SaxonC.
+- Report oversized Schematron output as a resource limit instead of malformed validation output.
+- Keep subprocess timeout diagnostics valid UTF-8 while preserving raw successful output bytes.
+
 ## [1.1.0] - 2026-09-14
 
 ### Add
@@ -58,7 +72,8 @@ All notable changes to this project will be documented in this file.
 - Compose PDF/A-3b Factur-X documents with Ghostscript.
 - Extract embedded Factur-X XML from PDF documents.
 
-[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/AdVitam/facturx/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/AdVitam/facturx/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AdVitam/facturx/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/AdVitam/facturx/compare/v0.1.0...v0.2.0

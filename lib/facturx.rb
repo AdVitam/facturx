@@ -17,6 +17,9 @@ require 'facturx/reading'
 require 'facturx/coerce'
 require 'facturx/format'
 require 'facturx/validation'
+require 'facturx/schematron_adapter'
+require 'facturx/subprocess'
+require 'facturx/xml/conformance_validator'
 require 'facturx/xml/validator'
 require 'facturx/xml/verifier'
 require 'facturx/pdf/document'
@@ -81,5 +84,5 @@ module Facturx
 
   private_constant :Attach, :Builders, :Coerce, :CoercionError, :Composers, :Format, :FormattingError,
                    :Generate, :Group, :Model, :Pdf, :ProfileResolver, :Reader, :SourceReader, :Term,
-                   :TermDeclarations, :Terms, :Writer, :Xml
+                   :SchematronAdapter, :Subprocess, :TermDeclarations, :Terms, :Writer, :Xml
 end

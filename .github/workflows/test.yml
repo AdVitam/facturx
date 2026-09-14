@@ -30,7 +30,29 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - run: bundle exec rspec
+      - run: bundle exec rake
+
+  schematron-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Install SaxonC-HE 12.10
+        env:
+          SAXONC_SHA256: 8db496a54568fac34950d4e581e832087c82dd0924545f67a5c56031c003d9ce
+          SAXONC_URL: https://downloads.saxonica.com/SaxonC/HE/12/SaxonCHE-linux-x86_64-12-10-0.zip
+        run: |
+          curl --fail --location --silent --show-error "$SAXONC_URL" --output "$RUNNER_TEMP/saxonc.zip"
+          echo "$SAXONC_SHA256  $RUNNER_TEMP/saxonc.zip" | sha256sum --check --strict
+          unzip -q "$RUNNER_TEMP/saxonc.zip" -d "$RUNNER_TEMP"
+      - name: Validate official Factur-X examples
+        env:
+          FACTURX_SAXONC_TRANSFORM: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/bin/Transform
+          LD_LIBRARY_PATH: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/lib:${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCCoreHE/lib
+        run: bundle exec rspec facturx-schematron/spec --tag saxonc
 
   pdfa-conformance:
     runs-on: ubuntu-latest
@@ -70,9 +92,24 @@ jobs:
       - name: Verify bundled schema integrity
         working-directory: lib/facturx/schema
         run: sha256sum --check --strict SHA256SUMS
-      - name: Build and inspect gem
+      - name: Verify bundled Schematron integrity
+        working-directory: facturx-schematron/lib/facturx/schematron/rules
+        run: sha256sum --check --strict SHA256SUMS
+      - name: Build and inspect gems
         run: |
-          bundle exec rake build
-          gem specification pkg/facturx-*.gem --yaml > /dev/null
-          gem install pkg/facturx-*.gem --no-document
-          ruby -e "require 'facturx'; abort unless Facturx::VERSION"
+          bundle exec rake build_all
+          gem specification pkg/facturx-[0-9]*.gem --yaml > /dev/null
+          gem specification pkg/facturx-schematron-*.gem --yaml > /dev/null
+          gem install pkg/facturx-[0-9]*.gem --no-document
+          gem install pkg/facturx-schematron-*.gem --no-document
+          ruby -e "require 'facturx'; abort unless Facturx::VERSION; abort if defined?(Facturx::Schematron)"
+          ruby -e "
+            ENV['FACTURX_SAXONC_TRANSFORM'] = '/bin/false'
+            begin
+              require 'facturx/schematron'
+            rescue Facturx::Schematron::UnavailableError => error
+              abort unless error.details[:reason] == :probe_failed
+            else
+              abort
+            end
+          "

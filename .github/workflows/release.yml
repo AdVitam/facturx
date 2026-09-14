@@ -18,21 +18,25 @@ jobs:
         with:
           ruby-version: '4.0'
           bundler-cache: true
-      - name: Build gem
-        run: bundle exec rake build
+      - name: Build gems
+        run: bundle exec rake build_all
       - uses: rubygems/configure-rubygems-credentials@6861877652452567c1a007a50badad3d316fc9ba
-      - name: Push to RubyGems
+      - name: Push gems to RubyGems
         run: |
-          gem="pkg/facturx-${GITHUB_REF_NAME#v}.gem"
-          output=$(gem push "$gem" 2>&1) || {
-            if echo "$output" | grep -Eqi 'already been pushed|repushing of gem versions is not allowed'; then
-              echo "skip: $gem already on RubyGems"
-            else
-              echo "$output"
-              exit 1
-            fi
-          }
-          echo "$output"
+          for gem in \
+            "pkg/facturx-${GITHUB_REF_NAME#v}.gem" \
+            "pkg/facturx-schematron-${GITHUB_REF_NAME#v}.gem"
+          do
+            output=$(gem push "$gem" 2>&1) || {
+              if echo "$output" | grep -Eqi 'already been pushed|repushing of gem versions is not allowed'; then
+                echo "skip: $gem already on RubyGems"
+              else
+                echo "$output"
+                exit 1
+              fi
+            }
+            echo "$output"
+          done
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

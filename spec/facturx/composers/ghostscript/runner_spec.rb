@@ -8,7 +8,9 @@ RSpec.describe Facturx::Composers::Ghostscript::Runner do
     argument = '$(this-must-not-run) with spaces'
     result = described_class.new.call(ruby_command('STDOUT.write(ARGV.fetch(0))', argument))
 
-    expect(result.to_h).to eq(stdout: argument, stderr: '', exit_status: 0)
+    expect(result.to_h).to eq(
+      stdout: argument, stderr: '', exit_status: 0, stdout_truncated: false
+    )
   end
 
   it 'captures a bounded and sanitized stderr when the process fails' do
