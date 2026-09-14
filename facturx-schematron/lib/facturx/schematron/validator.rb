@@ -39,6 +39,7 @@ module Facturx
 
       def call(document:, profile:)
         result = transform(document, profile)
+        raise_truncated_output if result.stdout_truncated
         raise_failed(result, profile) unless result.exit_status.zero?
 
         @parser.call(svrl: result.stdout)
@@ -73,6 +74,14 @@ module Facturx
           profile: profile.id,
           exit_status: result.exit_status,
           stderr: sanitize(result.stderr)
+        )
+      end
+
+      def raise_truncated_output
+        raise ExecutionError.new(
+          'SaxonC validation output exceeded the configured limit',
+          reason: :output_limit,
+          stream: :stdout
         )
       end
 

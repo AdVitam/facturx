@@ -10,19 +10,16 @@ module Facturx
         def initialize(
           timeout: Subprocess::Runner::DEFAULT_TIMEOUT,
           output_limit: Subprocess::Runner::DEFAULT_OUTPUT_LIMIT,
-          termination_grace: Subprocess::Runner::DEFAULT_TERMINATION_GRACE,
-          executor: nil
+          termination_grace: Subprocess::Runner::DEFAULT_TERMINATION_GRACE
         )
-          @executor = executor || Subprocess::Runner.new(timeout:, output_limit:, termination_grace:)
+          @runner = Subprocess::Runner.new(timeout:, output_limit:, termination_grace:)
         end
 
         def call(argv)
-          result = @executor.call(argv)
+          result = @runner.call(argv)
           return result if result.exit_status.zero?
 
           raise_failed(result)
-        rescue CompositionError
-          raise
         rescue Subprocess::Error => e
           raise_process_error(e)
         end

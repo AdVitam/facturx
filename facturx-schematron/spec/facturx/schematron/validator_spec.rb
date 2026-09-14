@@ -68,6 +68,19 @@ RSpec.describe Facturx::Schematron::Validator do
     expect(error.details).to include(reason: :nonzero_exit, profile: :minimum, exit_status: 7, stderr: 'failure?')
   end
 
+  it 'raises a typed error when validation output is truncated' do
+    allow(runner).to receive(:call).and_return(process_result(stdout_truncated: true))
+    error = execution_error { validator.call(document:, profile:) }
+
+    expect(error.details).to include(reason: :output_limit, stream: :stdout)
+  end
+
+  it 'parses valid output when only stderr is truncated' do
+    allow(runner).to receive(:call).and_return(process_result(stderr_truncated: true))
+
+    expect(validator.call(document:, profile:)).to eq(issues)
+  end
+
   it 'wraps subprocess failures without leaking internal errors' do
     allow(runner).to receive(:call).and_raise(subprocess_error)
     error = execution_error { validator.call(document:, profile:) }
@@ -89,8 +102,10 @@ RSpec.describe Facturx::Schematron::Validator do
     )
   end
 
-  def process_result(stdout: '<svrl/>', stderr: '', exit_status: 0)
-    Struct.new(:stdout, :stderr, :exit_status).new(stdout, stderr, exit_status)
+  def process_result(stdout: '<svrl/>', stderr: '', exit_status: 0, stdout_truncated: false, stderr_truncated: false)
+    Struct.new(:stdout, :stderr, :exit_status, :stdout_truncated, :stderr_truncated).new(
+      stdout, stderr, exit_status, stdout_truncated, stderr_truncated
+    )
   end
 
   def expected_arguments

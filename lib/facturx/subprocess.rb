@@ -6,12 +6,13 @@ require_relative 'error'
 
 module Facturx
   module Subprocess
-    Result = Data.define(:stdout, :stderr, :exit_status)
+    Result = Data.define(:stdout, :stderr, :exit_status, :stdout_truncated, :stderr_truncated)
 
     class Error < Facturx::Error; end
 
     class OutputCapture
       TRUNCATION_MARKER = '...[truncated]'
+      Output = Data.define(:content, :truncated)
 
       def initialize(stream, limit:)
         @stream = stream
@@ -26,9 +27,9 @@ module Facturx
           buffer << chunk.byteslice(0, remaining) if remaining.positive?
           truncated ||= chunk.bytesize > remaining
         end
-        truncate(buffer, truncated)
+        Output.new(content: truncate(buffer, truncated), truncated:)
       rescue IOError
-        buffer
+        Output.new(content: buffer, truncated:)
       end
 
       private
@@ -57,18 +58,18 @@ module Facturx
         @termination_grace = termination_grace
       end
 
-      def call(argv, input: nil, chdir: nil, env: {})
-        execute(argv, input:, chdir:, env:)
+      def call(argv, input: nil, chdir: nil)
+        execute(argv, input:, chdir:)
       rescue SystemCallError => e
         raise Error.new('Process could not be executed', reason: :spawn, cause: e.class.name, message: e.message)
       end
 
       private
 
-      def execute(argv, input:, chdir:, env:)
+      def execute(argv, input:, chdir:)
         options = { pgroup: true }
         options[:chdir] = chdir if chdir
-        Open3.popen3(env, *argv, **options) do |stdin, stdout, stderr, wait_thread|
+        Open3.popen3(*argv, **options) do |stdin, stdout, stderr, wait_thread|
           capture_process(stdin, stdout, stderr, wait_thread, input)
         end
       end
@@ -101,10 +102,14 @@ module Facturx
 
       def build_result(wait_thread, stdout_reader, stderr_reader)
         status = wait_for(wait_thread, stderr_reader)
+        stdout = stdout_reader.value
+        stderr = stderr_reader.value
         Result.new(
-          stdout: stdout_reader.value,
-          stderr: stderr_reader.value,
-          exit_status: status.exitstatus || (128 + status.termsig)
+          stdout: stdout.content,
+          stderr: stderr.content,
+          exit_status: status.exitstatus || (128 + status.termsig),
+          stdout_truncated: stdout.truncated,
+          stderr_truncated: stderr.truncated
         )
       end
 
@@ -116,7 +121,7 @@ module Facturx
           "Process timed out after #{@timeout} seconds",
           reason: :timeout,
           timeout: @timeout,
-          stderr: stderr_reader.value
+          stderr: stderr_reader.value.content
         )
       end
 
