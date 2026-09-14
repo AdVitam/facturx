@@ -8,24 +8,31 @@ RSpec.describe Facturx::Xml::Verifier do
 
   subject(:verifier) { described_class.new }
 
-  Facturx::Profiles.all.each do |profile|
-    it "returns the validated #{profile.id} profile for orchestration reuse" do
-      expect(verifier.call(xml: xml_fixture(profile.id))).to equal(profile)
+  it 'returns the validated profile for orchestration reuse' do
+    profile = Facturx::Profiles.fetch(:minimum)
+
+    expect(verifier.call(xml: xml_fixture(profile.id))).to equal(profile)
+  end
+
+  {
+    syntax: Facturx::InvalidXmlError,
+    profile: Facturx::UnknownProfileError,
+    xsd: Facturx::XsdValidationError
+  }.each do |layer, error_class|
+    it "raises #{error_class} for a #{layer} validation issue", :aggregate_failures do
+      error, report = verification_error(layer)
+
+      expect(error).to be_a(error_class)
+      expect(error.details).to include(report:, issues: report.issues)
     end
   end
 
-  it 'stops before schema validation when profile detection fails' do
-    schema_validator = instance_spy(Facturx::Xml::SchemaValidator)
-
-    verify_with_unknown_profile(schema_validator)
-    expect(schema_validator).not_to have_received(:call)
-  end
-
-  def verify_with_unknown_profile(schema_validator)
-    detector = instance_double(Facturx::Xml::ProfileDetector, call: nil)
-    allow(detector).to receive(:call).and_raise(Facturx::UnknownProfileError, 'unknown')
-    described_class.new(profile_detector: detector, schema_validator: schema_validator).call(xml: xml_fixture(:minimum))
-  rescue Facturx::UnknownProfileError
-    nil
+  def verification_error(layer)
+    issue = Facturx::Validation::Issue.new(code: :invalid, message: 'Invalid', layer:)
+    report = Facturx::Validation::Report.new(issues: [issue])
+    validator = instance_double(Facturx::Xml::Validator, call: report)
+    [described_class.new(validator:).call(xml: '<xml/>'), report]
+  rescue Facturx::ValidationError => e
+    [e, report]
   end
 end

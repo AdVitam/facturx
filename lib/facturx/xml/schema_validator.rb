@@ -2,6 +2,7 @@
 
 require 'nokogiri'
 require_relative '../error'
+require_relative 'schema_registry'
 
 module Facturx
   module Xml
@@ -27,6 +28,10 @@ module Facturx
         end
       end
 
+      def initialize(registry: SchemaRegistry.new)
+        @registry = registry
+      end
+
       def call(document:, profile:)
         validation_errors = load_schema(profile).validate(document)
         raise_validation_error(profile, validation_errors) unless validation_errors.empty?
@@ -35,7 +40,7 @@ module Facturx
       private
 
       def load_schema(profile)
-        self.class.send(:load_schema, File.expand_path(profile.xsd_path))
+        self.class.send(:load_schema, @registry.fetch(profile))
       rescue SystemCallError, Nokogiri::XML::SyntaxError => e
         raise_schema_load_error(profile, e)
       end
@@ -53,7 +58,7 @@ module Facturx
       end
 
       def raise_schema_load_error(profile, error)
-        raise XsdValidationError.new(
+        raise SchemaLoadError.new(
           "Unable to load the Factur-X #{profile.id} schema",
           profile: profile.id,
           errors: [{ message: error.message }.freeze].freeze

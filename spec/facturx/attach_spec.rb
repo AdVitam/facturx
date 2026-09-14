@@ -26,21 +26,19 @@ RSpec.describe Facturx::Attach do
   let(:adapters) do
     {
       xml_verifier: adapter(:verify_xml, profile),
-      pdf_inspector: adapter(:inspect_pdf, Facturx::Pdf::Inspector::Result.new(page_count: 2)),
-      composer: adapter(:compose, '%PDF-A'),
-      extractor: adapter(:extract, :result),
-      pdf_verifier: adapter(:verify_pdf, true)
+      pdf_composer: adapter(:compose_pdf, '%PDF-A')
     }
   end
 
-  it 'orchestrates composition and self-verification in order' do
+  it 'validates the XML once before composing the PDF' do
     expect([attach.call(pdf: '%PDF', xml: '<xml/>'), events]).to eq(['%PDF-A', expected_events])
   end
 
-  it 'propagates self-verification failures' do
-    adapters.fetch(:pdf_verifier).error = Facturx::VerificationError.new('invalid output')
+  it 'does not compose when XML validation fails' do
+    adapters.fetch(:xml_verifier).error = Facturx::InvalidXmlError.new('invalid XML')
 
-    expect { attach.call(pdf: '%PDF', xml: '<xml/>') }.to raise_error(Facturx::VerificationError)
+    expect { attach.call(pdf: '%PDF', xml: '<xml/>') }.to raise_error(Facturx::InvalidXmlError)
+      .and change(events, :dup).from([]).to([[:verify_xml, [], { xml: '<xml/>' }]])
   end
 
   def adapter(name, result)
@@ -50,10 +48,7 @@ RSpec.describe Facturx::Attach do
   def expected_events
     [
       [:verify_xml, [], { xml: '<xml/>' }],
-      [:inspect_pdf, ['%PDF'], {}],
-      [:compose, [], { pdf: '%PDF', xml: '<xml/>', profile: }],
-      [:extract, ['%PDF-A'], {}],
-      [:verify_pdf, [], { result: :result, expected_xml: '<xml/>', expected_page_count: 2, profile: }]
+      [:compose_pdf, [], { pdf: '%PDF', xml: '<xml/>', profile: }]
     ]
   end
 end

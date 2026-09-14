@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
-require_relative 'attach'
+require_relative 'pdf/composer'
 require_relative 'profile_resolver'
 require_relative 'writer'
 
 module Facturx
   class Generate
-    def initialize(writer: Writer.new, attacher: Attach.new, profile_resolver: ProfileResolver.new)
+    def initialize(writer: Writer.new, pdf_composer: Pdf::Composer.new, profile_resolver: ProfileResolver.new)
       @writer = writer
-      @attacher = attacher
+      @pdf_composer = pdf_composer
       @profile_resolver = profile_resolver
     end
 
     def call(pdf:, document:, profile:)
       canonical_profile = @profile_resolver.call(profile)
       xml = @writer.call(document:, profile: canonical_profile)
-      @attacher.call(pdf:, xml:)
+      @pdf_composer.call(pdf:, xml:, profile: canonical_profile)
     end
   end
 end

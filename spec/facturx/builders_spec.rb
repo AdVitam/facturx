@@ -134,7 +134,7 @@ RSpec.describe Facturx::Builders do
   end
 
   it 'defines a named builder for every model in the association schema' do
-    Facturx::Builders::Schema::ASSOCIATIONS.each_key do |model|
+    described_class::Schema::ASSOCIATIONS.each_key do |model|
       builder_name = "#{model.name.delete_prefix('Facturx::')}Builder"
 
       expect(described_class.const_get(builder_name)).to equal(described_class.for(model))

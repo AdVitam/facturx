@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-14
+
+### Add
+
+- Add packaged reference documentation for the public API and operational constraints.
+- Add structured XML and document validation reports with a shared issue model.
+- Add precise errors for invalid input sources, invalid documents, and unavailable schemas.
+
+### Fix
+
+- Validate generated XML only once before composing and verifying the PDF.
+- Limit the supported public surface to facades, domain values, results, profiles, and emitted errors.
+- Keep profile metadata independent from the bundled schema layout.
+- Expose strict XML failures from `attach` through the shared validation report and issue model.
+
+### Del
+
+- Remove `verify_xml`, `Conformance` reports, `ConformanceError`, and direct access to implementation services.
+- Remove `Profile#xsd_path` and the public schema layout constants from `Profiles`.
+- Make the internal `Profiles` lookup constants private; use `Profiles.all`, `.fetch`, or `.for_guideline_urn`.
+
 ## [1.0.0] - 2026-09-13
 
 ### Add
@@ -37,7 +58,8 @@ All notable changes to this project will be documented in this file.
 - Compose PDF/A-3b Factur-X documents with Ghostscript.
 - Extract embedded Factur-X XML from PDF documents.
 
-[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/AdVitam/facturx/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AdVitam/facturx/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/AdVitam/facturx/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/AdVitam/facturx/releases/tag/v0.1.0

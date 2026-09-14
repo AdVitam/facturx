@@ -44,7 +44,7 @@ RSpec.describe Facturx::Writer do
         end
 
         it 'passes profile XSD validation' do
-          expect(Facturx.verify_xml(xml:)).to be(true)
+          expect(Facturx.validate_xml(xml:)).to be_valid
         end
 
         it 'reads every represented value back' do
@@ -85,7 +85,7 @@ RSpec.describe Facturx::Writer do
         totals = document.totals.with(tax_total_in_tax_currency: nil)
 
         expect { writer.call(document: document.with(totals:), profile:) }
-          .to raise_conformance_error_for('BT-6', code: :forbidden_term)
+          .to raise_invalid_document_for('BT-6', code: :forbidden_term)
       end
     end
 
@@ -172,7 +172,7 @@ RSpec.describe Facturx::Writer do
         invalid = document.with(seller: document.seller.with(identifiers: [identifier]))
 
         expect { writer.call(document: invalid, profile:) }
-          .to raise_conformance_error_for('BT-29', code: :invalid_value)
+          .to raise_invalid_document_for('BT-29', code: :invalid_value)
       end
     end
 
@@ -202,57 +202,57 @@ RSpec.describe Facturx::Writer do
       it 'reports a project reference without an identifier before XSD validation' do
         invalid_document = document.with(project_reference: Facturx::DocumentReference.new(name: 'Project'))
 
-        expect { writer.call(document: invalid_document, profile:) }.to raise_conformance_error_for('BT-11')
+        expect { writer.call(document: invalid_document, profile:) }.to raise_invalid_document_for('BT-11')
       end
 
       it 'reports a gross price without an amount before XSD validation' do
         expect { writer.call(document: unrepresentable_gross_price_document, profile:) }
-          .to raise_conformance_error_for('BT-148')
+          .to raise_invalid_document_for('BT-148')
       end
 
       it 'reports an attachment qualifier without content' do
         expect { writer.call(document: document_with_attachment_qualifier, profile:) }
-          .to raise_conformance_error_for('BT-125-1', code: :invalid_value)
+          .to raise_invalid_document_for('BT-125-1', code: :invalid_value)
       end
 
       it 'reports a classification qualifier without a code' do
         expect { writer.call(document: document_with_classification_qualifier, profile:) }
-          .to raise_conformance_error_for('BT-158-1', code: :invalid_value)
+          .to raise_invalid_document_for('BT-158-1', code: :invalid_value)
       end
 
       it 'reports a quantity unit without a value' do
         expect { writer.call(document: document_with_quantity_unit, profile:) }
-          .to raise_conformance_error_for('BT-130', code: :invalid_value)
+          .to raise_invalid_document_for('BT-130', code: :invalid_value)
       end
 
       it 'reports an identifier scheme without a value' do
         expect { writer.call(document: document_with_payee_identifier_scheme, profile:) }
-          .to raise_conformance_error_for('BT-61-1', code: :invalid_value)
+          .to raise_invalid_document_for('BT-61-1', code: :invalid_value)
       end
 
       it 'reports a delivery identifier scheme without a value' do
         expect { writer.call(document: document_with_delivery_identifier_scheme, profile:) }
-          .to raise_conformance_error_for('BT-71-1', code: :invalid_value)
+          .to raise_invalid_document_for('BT-71-1', code: :invalid_value)
       end
 
       it 'reports a header invoiced object scheme without a value' do
         expect { writer.call(document: document_with_header_invoiced_object_scheme, profile:) }
-          .to raise_conformance_error_for('BT-18-1', code: :invalid_value)
+          .to raise_invalid_document_for('BT-18-1', code: :invalid_value)
       end
 
       it 'reports a line invoiced object scheme without a value' do
         expect { writer.call(document: document_with_line_invoiced_object_scheme, profile:) }
-          .to raise_conformance_error_for('BT-128-1', code: :invalid_value)
+          .to raise_invalid_document_for('BT-128-1', code: :invalid_value)
       end
 
       it 'reports a credit transfer account scheme' do
         expect { writer.call(document: document_with_credit_transfer_scheme, profile:) }
-          .to raise_conformance_error_for('BT-84', code: :invalid_value)
+          .to raise_invalid_document_for('BT-84', code: :invalid_value)
       end
 
       it 'reports a noncanonical tax registration scheme' do
         expect { writer.call(document: document_with_tax_registration_scheme, profile:) }
-          .to raise_conformance_error_for('BT-31', code: :invalid_value)
+          .to raise_invalid_document_for('BT-31', code: :invalid_value)
       end
 
       it 'uses the identifier as a project name when the supplied name is blank' do
@@ -260,8 +260,7 @@ RSpec.describe Facturx::Writer do
           project_reference: Facturx::DocumentReference.new(id: 'PROJECT', name: ' ')
         )
 
-        expect(Facturx::Reader.new.call(writer.call(document: id_only_document, profile:)).document.project_reference)
-          .to have_attributes(id: 'PROJECT', name: 'PROJECT')
+        expect(project_reference_for(id_only_document)).to have_attributes(id: 'PROJECT', name: 'PROJECT')
       end
 
       it 'uses VAT for blank tax type codes' do
@@ -278,12 +277,12 @@ RSpec.describe Facturx::Writer do
         invalid_document = document.with(tax_currency: nil)
 
         expect { writer.call(document: invalid_document, profile:) }
-          .to raise_conformance_error_for('BT-111', code: :invalid_value)
+          .to raise_invalid_document_for('BT-111', code: :invalid_value)
       end
 
       it 'reports a tax total in the invoice currency' do
         expect { writer.call(document: same_currency_tax_total_document, profile:) }
-          .to raise_conformance_error_for('BT-111', code: :invalid_value)
+          .to raise_invalid_document_for('BT-111', code: :invalid_value)
       end
 
       it 'reports a payee VAT identifier unsupported by its group' do
@@ -306,17 +305,17 @@ RSpec.describe Facturx::Writer do
 
       it 'reports unrepresentable direct reference attributes' do
         expect { writer.call(document: document_with_reference_name, profile:) }
-          .to raise_conformance_error_for('BT-14', code: :invalid_value)
+          .to raise_invalid_document_for('BT-14', code: :invalid_value)
       end
 
       it 'reports an identifier on a line buyer order reference' do
         expect { writer.call(document: document_with_line_buyer_order_identifier, profile:) }
-          .to raise_conformance_error_for('BT-132', code: :invalid_value)
+          .to raise_invalid_document_for('BT-132', code: :invalid_value)
       end
 
       it 'reports unrepresentable project reference attributes' do
         expect { writer.call(document: document_with_project_reference_attributes, profile:) }
-          .to raise_conformance_error_for('BT-11', code: :invalid_value)
+          .to raise_invalid_document_for('BT-11', code: :invalid_value)
       end
 
       it 'reports a net price discount' do
@@ -396,19 +395,50 @@ RSpec.describe Facturx::Writer do
     end
 
     context 'when the document is invalid' do
-      let(:conformance_error) do
+      let(:validation_error) do
         writer.call(document: invalid_document, profile: minimum_profile)
-      rescue Facturx::ConformanceError => e
+      rescue Facturx::InvalidDocumentError => e
         e
       end
 
-      it 'raises before XSD validation' do
-        expect { writer.call(document: invalid_document, profile: minimum_profile) }
-          .to raise_error(Facturx::ConformanceError)
+      it 'raises before XSD validation', :aggregate_failures do
+        schema_validator = instance_spy(Facturx::Xml::SchemaValidator)
+        local_writer = described_class.new(schema_validator:)
+
+        expect { local_writer.call(document: invalid_document, profile: minimum_profile) }
+          .to raise_error(Facturx::InvalidDocumentError)
+        expect(schema_validator).not_to have_received(:call)
       end
 
       it 'exposes the aggregate report' do
-        expect(conformance_error.details.fetch(:report).invalid?).to be(true)
+        expect(validation_error.details.fetch(:report).invalid?).to be(true)
+      end
+    end
+
+    context 'when the generated XML violates the XSD' do
+      let(:schema_validator) { instance_double(Facturx::Xml::SchemaValidator) }
+      let(:writer) { described_class.new(schema_validator:) }
+
+      before do
+        allow(schema_validator).to receive(:call).and_raise(xsd_error)
+      end
+
+      it 'returns the structural issue from validation', :aggregate_failures do
+        report = writer.validate(document: minimum_document, profile: minimum_profile)
+
+        expect(report).to have_attributes(profile: minimum_profile, invalid?: true)
+        expect(report.issues).to contain_exactly(
+          have_attributes(code: :xsd_violation, layer: :xsd, line: 12, column: 4)
+        )
+      end
+
+      it 'raises the document error with the same report when writing', :aggregate_failures do
+        report = writer.validate(document: minimum_document, profile: minimum_profile)
+
+        expect { writer.call(document: minimum_document, profile: minimum_profile) }
+          .to raise_error(Facturx::InvalidDocumentError) do |error|
+            expect(error.details[:report]).to eq(report)
+          end
       end
     end
   end
@@ -423,17 +453,30 @@ RSpec.describe Facturx::Writer do
     end
   end
 
-  def raise_conformance_error_for(term_id, code: nil)
-    raise_error(Facturx::ConformanceError) do |error|
+  def raise_invalid_document_for(term_id, code: nil)
+    raise_error(Facturx::InvalidDocumentError) do |error|
       issue = code ? have_attributes(code:, term_id:) : have_attributes(term_id:)
       expect(error.details.fetch(:report).issues).to include(issue)
     end
   end
 
+  def xsd_error
+    Facturx::XsdValidationError.new(
+      'Invalid XSD', profile: :minimum,
+                     errors: [{ message: 'Missing node', line: 12, column: 4, level: 2 }]
+    )
+  end
+
+  def project_reference_for(document)
+    xml = writer.call(document:, profile:)
+    Facturx::Reader.new.call(xml).document.project_reference
+  end
+
   def missing_term_ids(xml, profile)
     parsed = Nokogiri::XML(xml)
     Facturx::Terms.for_profile(profile).filter_map do |term|
-      term.id if parsed.xpath(representative_xpath(term), Facturx::Xml::Namespaces::MAP).empty?
+      term.id if parsed.xpath(representative_xpath(term),
+                              Facturx::Xml::Namespaces::MAP).empty?
     end
   end
 
@@ -441,8 +484,9 @@ RSpec.describe Facturx::Writer do
     settlement = Nokogiri::XML(xml).at_xpath(
       '//ram:ApplicableHeaderTradeSettlement', Facturx::Xml::Namespaces::MAP
     )
-    tax_currency = settlement.at_xpath('./ram:TaxCurrencyCode', Facturx::Xml::Namespaces::MAP)&.text
-    currencies = settlement.xpath('.//ram:TaxTotalAmount/@currencyID', Facturx::Xml::Namespaces::MAP).map(&:value)
+    namespaces = Facturx::Xml::Namespaces::MAP
+    tax_currency = settlement.at_xpath('./ram:TaxCurrencyCode', namespaces)&.text
+    currencies = settlement.xpath('.//ram:TaxTotalAmount/@currencyID', namespaces).map(&:value)
     [tax_currency, currencies]
   end
 
@@ -453,7 +497,7 @@ RSpec.describe Facturx::Writer do
   end
 
   def raise_unrepresentable_attribute(group_id, model, attribute)
-    raise_error(Facturx::ConformanceError) do |error|
+    raise_error(Facturx::InvalidDocumentError) do |error|
       expect(error.details.fetch(:report).issues).to include(
         have_attributes(
           code: :unrepresentable_attribute,

@@ -289,7 +289,7 @@ RSpec.describe Facturx::Reader do
   end
 
   it 'rejects non-string sources' do
-    expect { reader.call(StringIO.new(minimum_xml)) }.to raise_error(Facturx::InvalidXmlError)
+    expect { reader.call(StringIO.new(minimum_xml)) }.to raise_error(Facturx::InvalidSourceError)
   end
 
   def extracted_result

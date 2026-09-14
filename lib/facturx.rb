@@ -16,12 +16,14 @@ require 'facturx/diagnostic'
 require 'facturx/reading'
 require 'facturx/coerce'
 require 'facturx/format'
-require 'facturx/conformance'
+require 'facturx/validation'
+require 'facturx/xml/validator'
 require 'facturx/xml/verifier'
 require 'facturx/pdf/document'
 require 'facturx/pdf/inspector'
 require 'facturx/pdf/extractor'
 require 'facturx/pdf/verifier'
+require 'facturx/pdf/composer'
 require 'facturx/composers/ghostscript'
 require 'facturx/attach'
 require 'facturx/reader'
@@ -29,12 +31,16 @@ require 'facturx/writer'
 require 'facturx/generate'
 
 module Facturx
-  DEFAULT_ATTACHER = Attach.new
+  DEFAULT_XML_VALIDATOR = Xml::Validator.new
+  DEFAULT_PDF_COMPOSER = Pdf::Composer.new
+  DEFAULT_ATTACHER = Attach.new(pdf_composer: DEFAULT_PDF_COMPOSER)
   DEFAULT_READER = Reader.new
   DEFAULT_PROFILE_RESOLVER = ProfileResolver.new
   DEFAULT_WRITER = Writer.new
-  DEFAULT_GENERATOR = Generate.new(writer: DEFAULT_WRITER, attacher: DEFAULT_ATTACHER,
+  DEFAULT_GENERATOR = Generate.new(writer: DEFAULT_WRITER, pdf_composer: DEFAULT_PDF_COMPOSER,
                                    profile_resolver: DEFAULT_PROFILE_RESOLVER)
+  private_constant :DEFAULT_XML_VALIDATOR
+  private_constant :DEFAULT_PDF_COMPOSER
   private_constant :DEFAULT_ATTACHER
   private_constant :DEFAULT_READER
   private_constant :DEFAULT_PROFILE_RESOLVER
@@ -42,9 +48,8 @@ module Facturx
   private_constant :DEFAULT_GENERATOR
 
   class << self
-    def verify_xml(xml:)
-      Xml::Verifier.new.call(xml:)
-      true
+    def validate_xml(xml:)
+      DEFAULT_XML_VALIDATOR.call(xml:)
     end
 
     def attach(pdf:, xml:)
@@ -73,4 +78,8 @@ module Facturx
       DEFAULT_GENERATOR.call(pdf:, document:, profile:)
     end
   end
+
+  private_constant :Attach, :Builders, :Coerce, :CoercionError, :Composers, :Format, :FormattingError,
+                   :Generate, :Group, :Model, :Pdf, :ProfileResolver, :Reader, :SourceReader, :Term,
+                   :TermDeclarations, :Terms, :Writer, :Xml
 end

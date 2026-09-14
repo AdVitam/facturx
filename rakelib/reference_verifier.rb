@@ -69,9 +69,16 @@ module Facturx
     def verify_example(xml_path)
       xml = File.binread(xml_path)
       reading = Facturx.read(xml)
-      Facturx.verify_xml(xml:) unless unknown_profile?(reading)
+      verify_xml(xml_path, xml) unless unknown_profile?(reading)
       verify_reading(xml_path, reading)
       verify_pdf_pair(xml_path, xml)
+    end
+
+    def verify_xml(xml_path, xml)
+      report = Facturx.validate_xml(xml:)
+      return if report.valid?
+
+      raise "XML validation issues for #{xml_path}: #{report.issues.map(&:message)}"
     end
 
     def verify_reading(xml_path, reading)

@@ -1,23 +1,28 @@
 # frozen_string_literal: true
 
-require_relative 'parser'
-require_relative 'profile_detector'
-require_relative 'schema_validator'
+require_relative 'validator'
 
 module Facturx
   module Xml
     class Verifier
-      def initialize(parser: Parser.new, profile_detector: ProfileDetector.new, schema_validator: SchemaValidator.new)
-        @parser = parser
-        @profile_detector = profile_detector
-        @schema_validator = schema_validator
+      ERROR_CLASSES = {
+        syntax: InvalidXmlError,
+        profile: UnknownProfileError,
+        xsd: XsdValidationError
+      }.freeze
+      private_constant :ERROR_CLASSES
+
+      def initialize(validator: Validator.new)
+        @validator = validator
       end
 
       def call(xml:)
-        document = @parser.call(xml: xml)
-        profile = @profile_detector.call(document: document)
-        @schema_validator.call(document: document, profile: profile)
-        profile
+        report = @validator.call(xml:)
+        return report.profile if report.valid?
+
+        issue = report.issues.first
+        error_class = ERROR_CLASSES.fetch(issue.layer)
+        raise error_class.new(issue.message, report:, issues: report.issues)
       end
     end
   end

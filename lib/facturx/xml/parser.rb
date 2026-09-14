@@ -8,7 +8,7 @@ module Facturx
     class Parser
       def call(xml:)
         unless xml.is_a?(String)
-          raise InvalidXmlError.new('XML must be provided as a byte String', input_class: xml.class.name)
+          raise InvalidSourceError.new('XML must be provided as a byte String', input_class: xml.class.name)
         end
 
         Nokogiri::XML::Document.parse(xml) { |config| config.strict.nonet }
