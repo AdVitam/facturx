@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-14
+
 ### Add
 
+- Add packaged reference documentation for the public API and operational constraints.
 - Add structured XML and document validation reports with a shared issue model.
-- Add precise errors for invalid reader sources, invalid documents, and unavailable schemas.
+- Add precise errors for invalid input sources, invalid documents, and unavailable schemas.
 
 ### Fix
 
@@ -55,7 +58,8 @@ All notable changes to this project will be documented in this file.
 - Compose PDF/A-3b Factur-X documents with Ghostscript.
 - Extract embedded Factur-X XML from PDF documents.
 
-[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/AdVitam/facturx/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AdVitam/facturx/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/AdVitam/facturx/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/AdVitam/facturx/releases/tag/v0.1.0
