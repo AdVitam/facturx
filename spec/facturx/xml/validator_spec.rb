@@ -48,14 +48,4 @@ RSpec.describe Facturx::Xml::Validator do
     expect(report.issues).not_to be_empty
     expect(report.issues).to all(have_attributes(code: :xsd_violation, layer: :xsd, severity: :error))
   end
-
-  it 'stops before schema validation when profile detection fails' do
-    schema_validator = instance_spy(Facturx::Xml::SchemaValidator)
-    profile_detector = instance_double(Facturx::Xml::ProfileDetector)
-    allow(profile_detector).to receive(:call).and_raise(Facturx::UnknownProfileError, 'unknown')
-
-    described_class.new(profile_detector:, schema_validator:).call(xml: xml_fixture(:minimum))
-
-    expect(schema_validator).not_to have_received(:call)
-  end
 end

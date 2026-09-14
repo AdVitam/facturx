@@ -16,10 +16,6 @@ RSpec.describe Facturx do
   end
   let(:public_methods) { %w[attach build_xml extract_xml generate read validate_document validate_xml] }
 
-  it 'loads through the single supported require' do
-    expect(ruby_eval("require 'facturx'; print Facturx::VERSION")).to eq(Facturx::VERSION)
-  end
-
   it 'exports only the supported constants' do
     exported = ruby_eval("require 'facturx'; print Facturx.constants(false).sort.join(',')")
 

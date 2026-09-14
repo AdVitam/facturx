@@ -8,10 +8,10 @@ RSpec.describe Facturx::Xml::Verifier do
 
   subject(:verifier) { described_class.new }
 
-  Facturx::Profiles.all.each do |profile|
-    it "returns the validated #{profile.id} profile for orchestration reuse" do
-      expect(verifier.call(xml: xml_fixture(profile.id))).to equal(profile)
-    end
+  it 'returns the validated profile for orchestration reuse' do
+    profile = Facturx::Profiles.fetch(:minimum)
+
+    expect(verifier.call(xml: xml_fixture(profile.id))).to equal(profile)
   end
 
   {

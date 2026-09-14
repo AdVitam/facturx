@@ -23,8 +23,7 @@ module Facturx
         private
 
         def from_error(error, layer:, code:, profile: nil)
-          diagnostics = error.details[:errors]
-          diagnostics = [{ message: error.message }] if diagnostics.nil? || diagnostics.empty?
+          diagnostics = error.details[:errors] || [{ message: error.message }]
           issues = diagnostics.map { |diagnostic| issue(error, diagnostic, layer:, code:) }
           Validation::Report.new(profile:, issues:)
         end
