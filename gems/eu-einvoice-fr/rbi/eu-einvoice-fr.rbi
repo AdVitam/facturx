@@ -46,6 +46,43 @@ module EuEinvoice
 
     class Adapter
       include EuEinvoice::Adapter
+
+      sig { override.params(xml: String).returns(EuEinvoice::Validation::Context) }
+      def prepare(xml:); end
+
+      sig do
+        override.params(xml: T.nilable(String), context: T.nilable(EuEinvoice::Validation::Context))
+          .returns(T::Array[EuEinvoice::Specification])
+      end
+      def detect(xml: nil, context: nil); end
+
+      sig do
+        override.params(xml: T.nilable(String), context: T.nilable(EuEinvoice::Validation::Context))
+          .returns(T::Boolean)
+      end
+      def can_read?(xml: nil, context: nil); end
+
+      sig do
+        override.params(source: T.nilable(String), specification: T.nilable(EuEinvoice::Specification),
+                        on_unknown_profile: Symbol, context: T.nilable(EuEinvoice::Validation::Context))
+          .returns(EuEinvoice::Reading)
+      end
+      def read(source = nil, specification: nil, on_unknown_profile: :fallback, context: nil); end
+
+      sig { override.params(document: EuEinvoice::Document, specification: EuEinvoice::Specification).returns(Object) }
+      def compile(document:, specification:); end
+
+      sig do
+        override.params(document: EuEinvoice::Document, specification: EuEinvoice::Specification)
+          .returns(EuEinvoice::Validation::Report)
+      end
+      def validate_document(document:, specification:); end
+
+      sig do
+        override.params(xml: T.nilable(String), specification: T.nilable(EuEinvoice::Specification),
+                        context: T.nilable(EuEinvoice::Validation::Context)).returns(EuEinvoice::Validation::Report)
+      end
+      def validate_xml(xml: nil, specification: nil, context: nil); end
     end
 
     class InvalidAddressError < EuEinvoice::Error; end

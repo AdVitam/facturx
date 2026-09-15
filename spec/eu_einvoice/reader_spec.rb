@@ -58,12 +58,6 @@ RSpec.describe EuEinvoice::Reader do
     expect(reader.call(xml).document.notes.map(&:content)).to eq(%w[First Second])
   end
 
-  it 'extracts a PDF before mapping its embedded XML' do
-    extractor = instance_double(EuEinvoice::Pdf::Extractor, call: extracted_result)
-    reading = described_class.new(extractor:, profile_resolver: cii_profile_detector).call("prefix\n%PDF-1.7\n".b)
-    expect(reading).to have_attributes(source_type: :pdf, document: have_attributes(invoice_number: 'F-2023-004'))
-  end
-
   it 'falls back to the EN16931 intersection and diagnoses an unknown profile' do
     reading = reader.call(minimum_xml.sub('urn:factur-x.eu:1p0:minimum', 'urn:example:unknown'))
     expect(reading).to have_attributes(
@@ -273,13 +267,6 @@ RSpec.describe EuEinvoice::Reader do
     expect(EuEinvoice::SourceReader.new.call(bytes).source_type).to eq(:xml)
   end
 
-  it 'sniffs PDF byte strings before normalizing their encoding' do
-    source = (+'%PDF-1.7\\n').force_encoding(Encoding::UTF_16LE)
-    extractor = instance_double(EuEinvoice::Pdf::Extractor, call: extracted_result)
-
-    expect(EuEinvoice::SourceReader.new(extractor:).call(source).source_type).to eq(:pdf)
-  end
-
   it 'rejects unsupported policies' do
     expect { reader.call(minimum_xml, on_unknown_profile: :ignore) }.to raise_error(ArgumentError)
   end
@@ -290,12 +277,6 @@ RSpec.describe EuEinvoice::Reader do
 
   it 'rejects non-string sources' do
     expect { reader.call(StringIO.new(minimum_xml)) }.to raise_error(EuEinvoice::InvalidSourceError)
-  end
-
-  def extracted_result
-    EuEinvoice::Pdf::Extractor::Result.new(
-      xml: complete_en16931_xml, filename: nil, relationship: nil, metadata: nil, page_count: 1
-    )
   end
 
   def vat_point_diagnostics?(diagnostics)

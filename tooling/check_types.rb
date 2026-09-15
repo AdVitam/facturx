@@ -27,7 +27,15 @@ module TypeSmoke
     check(command, 100, '-e', 'EuEinvoice::Document.build(invoice_number: 123)')
     check(command, 100, '-e', 'EuEinvoice::Document.build { |builder| builder.buyer(name: 123) }')
     check(command, 100, '-e', 'class IncompletePack; include EuEinvoice::Pack; def specifications; []; end; end')
-    puts 'Shipped RBI smoke: valid usage accepted; invalid constructors, nested builders and incomplete packs rejected.'
+    check(command, 100, '-e', 'class IncompleteAdapter; include EuEinvoice::Adapter; end')
+    puts success_message
+  end
+
+  def success_message
+    [
+      'Shipped RBI smoke: valid usage accepted;',
+      'invalid constructors, nested builders and incomplete extension ports rejected.'
+    ].join(' ')
   end
 end
 

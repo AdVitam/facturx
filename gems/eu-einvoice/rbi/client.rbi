@@ -13,6 +13,39 @@ module EuEinvoice
 
   module Adapter
     interface!
+
+    sig { abstract.params(xml: String).returns(EuEinvoice::Validation::Context) }
+    def prepare(xml:); end
+
+    sig do
+      abstract.params(xml: String, context: EuEinvoice::Validation::Context)
+        .returns(T::Array[EuEinvoice::Specification])
+    end
+    def detect(xml:, context:); end
+
+    sig { abstract.params(xml: String, context: EuEinvoice::Validation::Context).returns(T::Boolean) }
+    def can_read?(xml:, context:); end
+
+    sig do
+      abstract.params(source: String, specification: T.nilable(EuEinvoice::Specification), on_unknown_profile: Symbol,
+                      context: EuEinvoice::Validation::Context).returns(EuEinvoice::Reading)
+    end
+    def read(source, specification:, on_unknown_profile:, context:); end
+
+    sig do
+      abstract.params(xml: String, specification: EuEinvoice::Specification, context: EuEinvoice::Validation::Context)
+        .returns(EuEinvoice::Validation::Report)
+    end
+    def validate_xml(xml:, specification:, context:); end
+
+    sig do
+      abstract.params(document: EuEinvoice::Document, specification: EuEinvoice::Specification)
+        .returns(EuEinvoice::Validation::Report)
+    end
+    def validate_document(document:, specification:); end
+
+    sig { abstract.params(document: EuEinvoice::Document, specification: EuEinvoice::Specification).returns(Object) }
+    def compile(document:, specification:); end
   end
 
   module Instrumenter

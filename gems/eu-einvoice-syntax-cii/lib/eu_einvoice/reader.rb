@@ -17,9 +17,9 @@ module EuEinvoice
     NAMESPACES = Xml::Namespaces::MAP
     UNKNOWN_PROFILE_POLICIES = %i[fallback raise].freeze
 
-    def initialize(profile_resolver:, parser: Xml::Parser.new, extractor: nil, registry: Terms, coercer: Coerce)
+    def initialize(profile_resolver:, parser: Xml::Parser.new, registry: Terms, coercer: Coerce)
       @parser = parser
-      @source_reader = SourceReader.new(extractor:)
+      @source_reader = SourceReader.new
       @profile_resolver = profile_resolver
       @registry = registry
       @coercer = coercer
