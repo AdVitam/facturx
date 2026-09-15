@@ -2,6 +2,6 @@ pre-commit:
   commands:
     rubocop:
       glob: '*.rb'
-      run: bundle exec rubocop -A {staged_files} && git add {staged_files}
+      run: ruby tooling/lint.rb --staged --autocorrect
     rspec:
       run: bundle exec rspec

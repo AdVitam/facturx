@@ -1,0 +1,4 @@
+fr:
+  eu_einvoice:
+    errors:
+      invalid: "Données de facturation invalides"

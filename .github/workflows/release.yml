@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'eu-einvoice-v*'
 
 jobs:
   publish:
@@ -18,41 +18,17 @@ jobs:
         with:
           ruby-version: '4.0'
           bundler-cache: true
-      - name: Build gems
-        run: bundle exec rake build_all
+      - name: Verify release identity
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ruby -r ./gems/eu-einvoice/lib/eu_einvoice/version -e 'abort "Tag/version mismatch" unless ENV.fetch("RELEASE_TAG") == "eu-einvoice-v#{EuEinvoice::VERSION}"'
+      - run: bundle exec rake build_all
+      - run: bundle exec ruby tooling/verify_packages.rb
       - uses: rubygems/configure-rubygems-credentials@6861877652452567c1a007a50badad3d316fc9ba
-      - name: Push gems to RubyGems
-        run: |
-          for gem in \
-            "pkg/facturx-${GITHUB_REF_NAME#v}.gem" \
-            "pkg/facturx-schematron-${GITHUB_REF_NAME#v}.gem"
-          do
-            output=$(gem push "$gem" 2>&1) || {
-              if echo "$output" | grep -Eqi 'already been pushed|repushing of gem versions is not allowed'; then
-                echo "skip: $gem already on RubyGems"
-              else
-                echo "$output"
-                exit 1
-              fi
-            }
-            echo "$output"
-          done
+      - name: Publish packages
+        run: bundle exec ruby tooling/publish_packages.rb
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          notes=$(awk -v v="${TAG#v}" '
-            $0 ~ "^## \\[" v "\\]" {grab=1; next}
-            grab && /^## \[/ {exit}
-            grab && /^\[[^]]+\]:/ {exit}
-            grab {print}
-          ' CHANGELOG.md)
-          if [ -z "$notes" ]; then
-            notes="See [CHANGELOG.md](CHANGELOG.md)."
-          fi
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            gh release edit "$TAG" --title "$TAG" --notes "$notes"
-          else
-            gh release create "$TAG" --title "$TAG" --notes "$notes"
-          fi
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" pkg/*.gem --title "$RELEASE_TAG" --notes-file docs/architecture/release-notes.md

@@ -1,302 +1,148 @@
-# Facturx documentation
+# EuEinvoice API guide
 
-## Contents
-
-- [Public API](#public-api)
-- [Build an invoice](#build-an-invoice)
-- [Use an existing XML invoice](#use-an-existing-xml-invoice)
-- [Read a received invoice](#read-a-received-invoice)
-- [Profiles](#profiles)
-- [Validation](#validation)
-- [PDF composition](#pdf-composition)
-- [Round-trip guarantees](#round-trip-guarantees)
-- [Security and resource usage](#security-and-resource-usage)
-- [Development](#development)
-
-## Public API
-
-All PDF and XML inputs and outputs are byte strings. Facturx never interprets a string as a file path.
-
-The three primary workflows are:
-
-| Operation | API | Result |
-|---|---|---|
-| Build and embed XML | `Facturx.generate(pdf:, document:, profile:)` | PDF/A-3b bytes |
-| Read XML or PDF | `Facturx.read(source)` | `Facturx::Reading` |
-| Embed existing XML | `Facturx.attach(pdf:, xml:)` | PDF/A-3b bytes |
-
-Focused operations are available when the complete workflow is not needed:
-
-| Operation | API | Result |
-|---|---|---|
-| Validate XML | `Facturx.validate_xml(xml:)` | `Facturx::Validation::Report` |
-| Validate typed data | `Facturx.validate_document(document:, profile:)` | `Facturx::Validation::Report` |
-| Build XML | `Facturx.build_xml(document:, profile:)` | XML bytes |
-| Extract embedded XML | `Facturx.extract_xml(pdf:)` | Exact embedded XML bytes |
-
-## Build an invoice
-
-`Facturx::Document.build` provides a nested DSL for the immutable Factur-X model. Singular associations accept either keyword attributes or a block; repeating associations use singular helpers such as `line`, `note`, and `tax_breakdown`.
+## Configuration and resolution
 
 ```ruby
-document = Facturx::Document.build(
-  invoice_number: 'INV-2026-0042',
-  type_code: '380',
-  issue_date: Date.new(2026, 9, 13),
-  currency: 'EUR'
-) do |invoice|
-  invoice.seller do |seller|
-    seller.name = 'Seller SAS'
-    seller.address(
-      line_one: '10 Example Street',
-      postcode: '75001',
-      city: 'Paris',
-      country_code: 'FR'
-    )
-    seller.vat_identifier(value: 'FR00123456789')
-  end
-
-  invoice.buyer do |buyer|
-    buyer.name = 'Buyer SAS'
-    buyer.address(country_code: 'FR')
-  end
-
-  invoice.line do |line|
-    line.id = '1'
-    line.product(name: 'Consulting services')
-    line.quantity(value: BigDecimal('1'), unit_code: 'C62')
-    line.net_price(amount: BigDecimal('100.00'))
-    line.tax(category_code: 'S', rate: BigDecimal('20.00'))
-    line.net_amount = BigDecimal('100.00')
-  end
-
-  invoice.tax_breakdown(
-    category_code: 'S',
-    rate: BigDecimal('20.00'),
-    basis_amount: BigDecimal('100.00'),
-    tax_amount: BigDecimal('20.00')
-  )
-
-  invoice.totals(
-    line_total: BigDecimal('100.00'),
-    tax_basis_total: BigDecimal('100.00'),
-    tax_total: BigDecimal('20.00'),
-    grand_total: BigDecimal('120.00'),
-    due_payable: BigDecimal('120.00')
-  )
-end
+pack = EuEinvoice::France::Pack.new(version: '1.09.2')
+client = EuEinvoice::Client.new(packs: [pack], policy: pack.policy, validation: :structural)
+resolution = client.resolve(document: invoice)
 ```
 
-Choose one of `:minimum`, `:basic_wl`, `:basic`, `:en16931`, or `:extended` when validating or generating a document:
+The policy selects a pinned specification for a configured seller/buyer country pair. Explicit specifications override the policy but must match the document's guideline and semantic version. No country is inferred from missing data and no customer category flag is required.
+
+A resolution exposes `status`, `specification`, `candidates`, `required_inputs`, `explanation`, `requirements` and `diagnostics`. Statuses are `resolved`, `unsupported`, `missing_information` and `ambiguous`. Writers require a resolved result. A supplied resolution is bound to the client and the entire immutable document; reuse after changing the document fails.
+
+Known recipient requirements can be supplied without directory access or a customer-category flag:
 
 ```ruby
-source_pdf = File.binread('invoice.pdf')
-facturx_pdf = Facturx.generate(pdf: source_pdf, document:, profile: :en16931)
+requirements = EuEinvoice::RecipientRequirements.new(
+  specification_ids: [pack.specification.id],
+  electronic_address_schemes: ['0225'],
+  required_references: [:buyer_reference],
+  provenance: EuEinvoice::RequirementProvenance.new(source: 'Customer onboarding', observed_at: Time.now)
+)
+resolution = client.resolve(document: invoice, requirements: requirements)
 ```
 
-`generate` performs document and XSD validation before composing the PDF. Use `validate_document` to collect every semantic issue without raising, or `build_xml` when only the XML is needed:
+Requirements constrain explicit specifications and configured preferences; incompatibility never triggers a silent fallback. Missing addresses or references produce resolution diagnostics. Accepted syntax alone may still leave several profiles ambiguous. Provenance records application-supplied facts, not verification by the library; refresh stale facts in the application.
 
 ```ruby
-report = Facturx.validate_document(document:, profile: :en16931)
-
-report.issues.each { |issue| warn issue.message } if report.invalid?
+spec = pack.specification(profile: :en16931)
+artifact = client.build_xml(document: invoice, specification: spec)
 ```
 
-Alternatively, call `build_xml` directly and rescue `Facturx::InvalidDocumentError` when the report is only needed on failure.
+Supported profiles are `minimum`, `basic_wl`, `basic`, `en16931` and `extended`. The semantic model represents the existing 184 EN 16931 terms. EXTENDED-specific data outside the model remains preserved in the reading source and diagnosed, not silently round-tripped.
 
-`build_xml` and `generate` raise `Facturx::InvalidDocumentError` with the same report in `error.details[:report]` when the document is invalid.
+`EuEinvoice::Codes::DocumentType`, `Codes::PaymentMeans` and `Codes::VatCategory` provide named constants for common values. They are conveniences, not exhaustive acceptance lists or tax advice; the chosen specification's actual code lists and rules remain authoritative.
 
-The writer inserts the selected profile's canonical BT-24 guideline URN when it is absent. It reports a profile mismatch when the document contains a conflicting value. Values are serialized from their declared semantic type; monetary values with more than two decimal places are rejected rather than rounded implicitly.
+## Methods
 
-## Use an existing XML invoice
+| Method | Result |
+| --- | --- |
+| `resolve(document:, specification: nil, requirements: RecipientRequirements.new)` | Resolution without network access |
+| `read(source, specification: nil, on_unknown_profile: :fallback)` | Reading with document, source and diagnostics |
+| `validate_xml(xml:, specification: nil)` | Validation::Report |
+| `validate_document(document:, specification: nil, resolution: nil)` | Validation::Report |
+| `build_xml(document:, specification: nil, resolution: nil)` | XML Artifact |
+| `generate(document:, pdf:, specification: nil, resolution: nil)` | Hybrid PDF Artifact |
+| `attach(pdf:, xml:, specification: nil)` | PDF Artifact after validating supplied XML |
+| `extract_xml(pdf:, specification: nil)` | XML Artifact without a validation claim |
 
-Validate XML against the XSD selected by its BT-24 guideline URN:
+The three document-writing methods also accept `allow_loss: false`. A `Reading` with diagnostics is rejected unless loss is explicitly accepted. Passing only its `document` discards this provenance and is the caller's responsibility.
+
+With several PDF extraction providers installed, pass a specification to `read` or `extract_xml`; the client never silently chooses the first provider.
+
+Artifacts expose immutable `bytes`, `content_type`, `filename`, `byte_size`, optional `report`, and `to_io`. Each `to_io` is independent. The caller owns returned streams. Inputs accept String bytes, artifacts or IO at its current position; the library does not close or rewind caller IO. Strings are never interpreted as paths.
+
+## Validation and errors
+
+Full mode requires `eu-einvoice-validation-fr` and a usable SaxonC engine at construction. Structural mode does not load or use the engine. `read` remains tolerant in both modes.
+
+Reports expose issues, selected specification, requested coverage, executed steps, step states and actual resources. `valid?` checks errors; `complete?` checks whether full stages ran. A complete report may be invalid, and a valid structural report is incomplete.
+
+Issues carry stable codes, severity, layer, term/group, path and optional source position. Do not branch on translated message text. Document errors are reports or `InvalidDocumentError` with `details[:report]` when writing cannot succeed. Configuration, ambiguity, resource and engine failures are structured `EuEinvoice::Error` subclasses.
+
+## French addressing
 
 ```ruby
-xml = File.binread('invoice.xml')
-report = Facturx.validate_xml(xml:)
-report.valid?
+address = EuEinvoice::France::Addressing.build(siret: customer_siret, routing_code: service_route)
+buyer = buyer.with(electronic_address: address.electronic_address)
 ```
 
-`validate_xml` reports malformed XML, a missing or unknown BT-24 profile, and every XSD violation without raising. A non-`String` input raises `Facturx::InvalidSourceError`; internal failures such as an unavailable bundled schema also raise a typed `Facturx::Error`.
+Other forms use `siren:`, optionally `suffix:`; a routing code requires a SIRET. SIREN is derived from a supplied SIRET, and conflicting inputs fail. The value object uses the French electronic-address scheme `0225` and preserves the required separators. It does not look up the customer, choose among active addresses or infer B2B/B2C/public status.
 
-Document validation reports all semantic issues in one pass. XSD validation runs only after that semantic layer succeeds, avoiding structural noise from XML already known to be incomplete.
+References supplied by a customer, such as an order or commitment, belong to the relevant invoice fields. Do not substitute an arbitrary service name or code for a confirmed routing address.
 
-Attach valid XML to an existing visual invoice PDF:
+## Rails recipes
+
+Install `eu-einvoice-rails`, configure clients in an initializer, then access `Rails.application.config.eu_einvoice[:name]`. The registry freezes after configuration. Each test application owns its registry.
+
+Create an explicit mapper:
+
+```sh
+bin/rails generate eu_einvoice:mapper CustomerInvoice
+```
+
+Deliver bytes in a controller:
 
 ```ruby
-pdf = File.binread('invoice.pdf')
-facturx_pdf = Facturx.attach(pdf:, xml:)
-
-File.binwrite('invoice-facturx.pdf', facturx_pdf)
+send_data artifact.bytes, type: artifact.content_type, filename: artifact.filename
 ```
 
-`attach` validates the XML, converts the input to PDF/A-3b, embeds the original bytes as `factur-x.xml`, and verifies the attachment and Factur-X metadata. It rejects signed or encrypted PDFs because rewriting them would invalidate their protection.
-
-Extracting XML is deliberately independent from validation:
+Attach to an email:
 
 ```ruby
-embedded_xml = Facturx.extract_xml(pdf: facturx_pdf)
-Facturx.validate_xml(xml: embedded_xml)
+attachments[artifact.filename] = { mime_type: artifact.content_type, content: artifact.bytes }
 ```
 
-This separation keeps malformed third-party invoices inspectable.
-
-## Read a received invoice
-
-`read` accepts either XML or PDF bytes and returns an immutable `Facturx::Reading`:
+Persist only when the application asks:
 
 ```ruby
-reading = Facturx.read(File.binread('received-invoice.pdf'))
-
-reading.document.invoice_number
-reading.document.totals.grand_total
-reading.profile.id
-reading.diagnostics
-reading.source
-reading.source_type
+record.invoice.attach(EuEinvoice::Rails::ActiveStorage.attachable(artifact))
 ```
 
-Dates are `Date`, decimals are `BigDecimal`, identifiers retain their schemes, and repeating groups are frozen arrays in XML order. `source` contains the exact XML bytes and `source_type` is either `:xml` or `:pdf`.
-
-Reading is tolerant and does not run implicit XSD validation. Missing, duplicate, empty, invalid, or unmapped values produce immutable diagnostics while usable fields remain accessible. Call `validate_xml` when structural validation is required.
-
-Unknown or missing BT-24 values fall back to the EN 16931 intersection represented by the EXTENDED profile and add a diagnostic. Reject them instead with:
+Read an existing blob through an IO:
 
 ```ruby
-Facturx.read(xml, on_unknown_profile: :raise)
+blob.open { |io| client.read(io) }
 ```
 
-## Profiles
+Active Storage may use a temporary file for `open`. Configure service-side limits as well: core bounds its own reads, not a preceding remote download implemented by Active Storage.
 
-The five canonical profiles are available through `Facturx::Profiles`:
+Map validation issues to application errors:
 
 ```ruby
-profile = Facturx::Profiles.fetch(:en16931)
-
-profile.id
-profile.guideline_urn
-profile.conformance_level
+EuEinvoice::Rails::ErrorAdapter.apply(record, report: report, attributes: { 'BT-1' => :number })
 ```
 
-Public writer methods accept either a profile symbol or its canonical `Facturx::Profile`. A separate profile object with matching attributes is rejected to keep profile resolution tied to the bundled XSD and metadata definitions.
+Unmapped issues go to `:base`. English/French fallback messages are included. Notifications use `<operation>.eu_einvoice` and include technical metadata without XML, customer values or exception messages.
 
-The semantic registry covers all 184 EN 16931 business terms and the MINIMUM, BASIC WL, and BASIC subsets. EXTENDED-only fields remain available in `Reading#source` and produce diagnostics until represented in the typed model.
+## System dependencies and limits
 
-## Validation
+Provision Ghostscript 9.54+, `zugferd.ps` and an RGB ICC profile for composition. Configure `EU_EINVOICE_GHOSTSCRIPT`, `EU_EINVOICE_ZUGFERD_PS` and `EU_EINVOICE_RGB_ICC_PROFILE` when discovery is insufficient. Provision SaxonC-HE 12.10+ and use `EU_EINVOICE_SAXONC_TRANSFORM` to select its executable.
 
-`validate_xml` and `validate_document` return the same immutable report. Each issue identifies its validation layer, severity, message, and available XML or business-term location. A report can therefore be inspected without rescuing expected validation failures:
+Resource limits are immutable client configuration:
 
 ```ruby
-report.issues.each do |issue|
-  warn "#{issue.layer}: #{issue.term_id || issue.path} #{issue.message}"
-end
+limits = EuEinvoice::ResourceLimits.new(pdf_bytes: 20 * 1024 * 1024, process_timeout: 30)
+client = EuEinvoice::Client.new(packs: [pack], policy: pack.policy, validation: :structural, limits: limits)
 ```
 
-Core validation issues use the `:error` severity. The optional Schematron validator also preserves official `:warning` findings, which do not invalidate a report.
-
-Generated documents always pass through two layers:
-
-1. semantic conformance checks against the selected profile's business-term cardinalities and supported model mappings;
-2. structural validation against the bundled official profile XSD.
-
-Incoming XML passed to `validate_xml` is parsed, resolved to a profile from BT-24, and checked against that profile's XSD. When enabled, Schematron runs after these core checks as a third validation layer.
-
-### Optional Schematron validation
-
-Install the companion gem to add the official Factur-X 1.09.2 business rules without increasing the core gem's package or runtime footprint:
-
-```ruby
-gem 'facturx'
-gem 'facturx-schematron', require: 'facturx/schematron'
-```
-
-Alternatively, require it explicitly after Bundler setup:
-
-```ruby
-require 'facturx'
-require 'facturx/schematron'
-```
-
-Loading the companion enables Schematron after XSD validation for `validate_xml`, `validate_document`, `attach`, `build_xml`, and `generate`. Public method signatures and report types remain unchanged. `read` stays tolerant and does not validate implicitly.
-
-The companion requires SaxonC-HE's `Transform` executable, version 12.10 or newer. Put it in `PATH`, or provide its absolute path:
-
-```bash
-export FACTURX_SAXONC_TRANSFORM=/opt/saxonc/bin/Transform
-```
-
-Loading fails immediately with `Facturx::Schematron::UnavailableError` when the executable is missing, cannot start, or is unsupported. Runtime engine failures raise `Facturx::Schematron::ExecutionError`; they never fall back silently to XSD-only validation.
-
-Schematron findings use the `:schematron` layer and expose the official rule ID, test, and flag in `issue.details`. Official warnings keep reports valid; assertions without a warning flag are errors. Strict XML workflows raise `Facturx::SchematronValidationError` for blocking findings.
-
-The companion ships only the five official compiled XSLT stylesheets and adjacent code databases. Each successful validation starts one isolated SaxonC subprocess, so applications processing large batches should account for native process startup and memory in their worker sizing.
-
-Domain failures use a `Facturx::Error` subclass with structured context in `details`. Common errors include:
-
-| Error | Meaning |
-|---|---|
-| `Facturx::ValidationError` | Base class for strict validation failures |
-| `Facturx::InvalidXmlError` | XML cannot be parsed |
-| `Facturx::UnknownProfileError` | BT-24 is absent or unsupported during strict XML validation |
-| `Facturx::XsdValidationError` | XML does not satisfy the selected profile XSD |
-| `Facturx::SchematronValidationError` | XML violates an enabled Schematron business rule |
-| `Facturx::UnsupportedProfileError` | A writer profile is unsupported |
-| `Facturx::InvalidDocumentError` | A typed document violates the selected profile |
-| `Facturx::InvalidSourceError` | An XML or reader source is not a byte `String` |
-| `Facturx::SchemaLoadError` | A bundled validation schema cannot be loaded |
-| `Facturx::ProtectedPdfError` | The source PDF is signed or encrypted |
-| `Facturx::ComposerUnavailableError` | Required Ghostscript resources are unavailable |
-| `Facturx::CompositionError` | Ghostscript composition failed |
-| `Facturx::ExtractionError` | The embedded Factur-X XML cannot be selected or decoded |
-| `Facturx::VerificationError` | The composed PDF does not match the requested invoice |
-
-XSD validation alone is not complete regulatory validation. The optional companion runs the official Schematron rules, but Facturx does not calculate invoice values or replace application-level accounting controls.
-
-## PDF composition
-
-PDF composition through `attach` or `generate` requires:
-
-- Ghostscript 9.54 or newer;
-- Ghostscript's `zugferd.ps` script;
-- an RGB ICC profile.
-
-These resources are not distributed with the gem. Facturx searches common installation paths and accepts explicit overrides when automatic discovery is not suitable:
-
-```bash
-export GHOSTSCRIPT_BIN=/opt/ghostscript/bin/gs
-export FACTURX_ZUGFERD_PS=/opt/ghostscript/share/ghostscript/lib/zugferd.ps
-export FACTURX_ICC_PROFILE=/opt/ghostscript/share/ghostscript/iccprofiles/default_rgb.icc
-```
-
-The composer invokes Ghostscript as an external process with a timeout, bounded output capture, and file access restricted to its staged inputs and outputs. The optional Schematron integration reuses the same bounded process lifecycle for SaxonC.
-
-Facturx does not create the visual invoice. The supplied PDF remains the visual source that is converted to PDF/A-3b and enriched with Factur-X XML and metadata.
-
-## Round-trip guarantees
-
-The reader preserves the exact incoming XML in `Reading#source`, but reading and rebuilding is not a fidelity round-trip. The writer cannot reproduce values outside the typed semantic model.
-
-Retain and reuse `Reading#source` when reissuing an incoming invoice without intentional semantic changes.
-
-## Security and resource usage
-
-The byte-string API materializes PDF streams in memory. Process untrusted PDFs in a resource-limited worker: limiting only the input file size does not prevent amplification by a compressed embedded stream.
-
-Facturx does not communicate with a PDP or implement e-invoicing transport. Network submission, authentication, retries, storage, invoice calculations, and business approval workflows remain application responsibilities.
+Defaults and process guarantees are documented in [ADR 004](docs/architecture/adr/004-resources.md). Limits are operational policy, not normative invoice limits. PDF processing requires supported process resource controls; unavailable requested controls fail explicitly. Binary paths and schemas are never downloaded at runtime.
 
 ## Development
 
-```bash
-mise install
+```sh
 bundle install
-bundle exec rubocop
-bundle exec rake
+bundle exec rspec
+# Without a provisioned SaxonC engine:
+bundle exec rspec --tag '~saxonc'
+ruby tooling/lint.rb
 bundle exec rake build_all
+bundle exec ruby tooling/verify_packages.rb
+bundle exec ruby tooling/benchmark.rb current
 ```
 
-Maintainers can compare the semantic registry, D22B mappings, diagnostics, official XML examples, and paired PDF attachments with an extracted upstream package:
+The CI matrix covers compatible Ruby/Rails combinations, real SaxonC, veraPDF and built-package loading. A Rails dummy app uses isolated SQLite memory and private temporary storage; no application database is required.
 
-```bash
-FACTURX_REFERENCE_ROOT=/path/to/ZUGFeRD_2.5.2_EN bundle exec rake reference:verify
-```
+Production lint is blocking. Test files are formatted with `ruby tooling/lint.rb --autocorrect`; remaining test-style offenses are reported but non-blocking, following the repository test policy. No cop configuration is relaxed.
