@@ -50,7 +50,7 @@ module EuEinvoice
 
     def compose(pdf, xml, specification, report)
       bytes = Source.read(pdf, limit: limits.pdf_bytes)
-      output = pack_for(specification).compose(pdf: bytes, xml:, specification:, limits:)
+      output = pack_for(specification, capability: :compose).compose(pdf: bytes, xml:, specification:, limits:)
       Artifact.new(bytes: output, content_type: 'application/pdf', filename: 'invoice.pdf', report:)
     end
   end

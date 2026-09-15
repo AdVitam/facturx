@@ -100,6 +100,24 @@ RSpec.describe EuEinvoice::Client do
     expect { multiple.extract_xml(pdf: '%PDF-1.7') }.to raise_error(EuEinvoice::AmbiguousSpecificationError)
   end
 
+  it 'reports the missing extraction capability of an explicitly selected XML-only pack' do
+    xml_only = described_class.new(packs: [xml_only_pack], validation: :structural)
+
+    expect { xml_only.extract_xml(pdf: build_pdf, specification:) }.to raise_error(EuEinvoice::ResolutionError)
+  end
+
+  it 'reports the missing composition capability of an XML-only pack when generating' do
+    xml_only = described_class.new(packs: [xml_only_pack], validation: :structural)
+
+    expect { xml_only.generate(document:, pdf: build_pdf, specification:) }.to raise_error(EuEinvoice::ResolutionError)
+  end
+
+  it 'reports the missing composition capability of an XML-only pack when attaching' do
+    xml_only = described_class.new(packs: [xml_only_pack], validation: :structural)
+
+    expect { xml_only.attach(pdf: build_pdf, xml:, specification:) }.to raise_error(EuEinvoice::ResolutionError)
+  end
+
   it 'does not select an arbitrary version on ambiguous XML' do
     spec = specification.with(version: 'test-version', fingerprint: nil)
     alternate = Struct.new(:specifications) do
@@ -148,5 +166,13 @@ RSpec.describe EuEinvoice::Client do
     extracted = client.extract_xml(pdf: artifact)
     expect(extracted.bytes).to eq(client.build_xml(document:, specification:).bytes)
     expect(client.read(artifact).source_type).to eq(:pdf)
+  end
+
+  def xml_only_pack
+    Struct.new(:specifications) do
+      def adapter(validation:, limits:)
+        EuEinvoice::France::Adapter.new(specifications:, validation:, limits:)
+      end
+    end.new([specification])
   end
 end

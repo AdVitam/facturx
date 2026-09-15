@@ -35,7 +35,7 @@ module EuEinvoice
     private
 
     def extraction_provider(specification)
-      return pack_for(specification) if specification
+      return pack_for(specification, capability: :extract_xml) if specification
 
       providers = @packs.select { |pack| pack.respond_to?(:extract_xml) }
       raise ResolutionError, 'No PDF container is installed' if providers.empty?

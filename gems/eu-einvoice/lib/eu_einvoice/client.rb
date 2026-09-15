@@ -45,11 +45,16 @@ module EuEinvoice
       raise ArgumentError, 'Duplicate specification identity/version in client packs'
     end
 
-    def pack_for(specification)
+    def pack_for(specification, capability: nil)
       raise TypeError, 'specification must be a Specification' unless specification.is_a?(Specification)
 
-      @packs.find { |pack| pack.specifications.any? { |item| item.fingerprint == specification.fingerprint } } ||
-        raise(ResolutionError.new('Specification is not installed in this client', specification: specification.id))
+      pack = @packs.find { |item| item.specifications.any? { |spec| spec.fingerprint == specification.fingerprint } } ||
+             raise(ResolutionError.new('Specification is not installed in this client',
+                                       specification: specification.id))
+      return pack unless capability && !pack.respond_to?(capability)
+
+      raise ResolutionError.new('Pack does not provide the required capability', specification: specification.id,
+                                                                                 capability:)
     end
 
     def instrument(event, payload = {}, &)
