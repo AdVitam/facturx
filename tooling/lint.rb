@@ -30,6 +30,8 @@ module ProjectLint
   def lint_tests(command, tests)
     return if tests.empty?
 
+    # Specs are autofixed and reported, but their stylistic cops are advisory.
+    # Production sources remain the release gate; RuboCop execution errors still abort.
     system(*command, *tests)
     abort 'Test lint could not execute' unless [0, 1].include?($CHILD_STATUS.exitstatus)
   end
