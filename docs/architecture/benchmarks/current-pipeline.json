@@ -1,0 +1,298 @@
+{
+  "ruby": "ruby 4.0.6 (2026-07-14 revision 03b6d3f889) +PRISM [x86_64-linux]",
+  "platform": "x86_64-linux",
+  "fixture": "spec/validation_fr/fixtures/xml/en16931.xml",
+  "fixture_sha256": "bbe72251c63614ffb2bc5ffaf8dcb2cf044d399346e5965b3ff2cdb0a1d563df",
+  "samples": [
+    {
+      "lines": 1,
+      "xml_bytes": 6276,
+      "xml_sha256": "5dc0c5d17062d64000c032ec92ee0a9da3bc63f93d0e5876e1409842a72e69ed",
+      "stages": {
+        "xml_parse": {
+          "seconds_per_call": 0.000185302613923947,
+          "allocations_per_call": 16.666666666666668,
+          "memory": {
+            "parent_rss_kib": 46408,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 4,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "xml_write_with_xsd": {
+          "seconds_per_call": 0.001325611025094986,
+          "allocations_per_call": 2896.0,
+          "memory": {
+            "parent_rss_kib": 46108,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 4,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "xsd_only_warm": {
+          "seconds_per_call": 0.00015061100323994955,
+          "allocations_per_call": 100.0,
+          "memory": {
+            "parent_rss_kib": 46108,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 4,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "schematron_only": {
+          "seconds_per_call": 0.18858422595076263,
+          "allocations_per_call": 278.0,
+          "memory": {
+            "parent_rss_kib": 46184,
+            "descendants_rss_sum_kib": 132268,
+            "largest_descendant_rss_kib": 132268,
+            "samples": 40,
+            "descendant_commands": {
+              "Transform": 132268
+            }
+          },
+          "iterations": 1
+        },
+        "pdf_compose_with_verification": {
+          "seconds_per_call": 0.5107125479262322,
+          "allocations_per_call": 1255.0,
+          "memory": {
+            "parent_rss_kib": 46488,
+            "descendants_rss_sum_kib": 38620,
+            "largest_descendant_rss_kib": 38620,
+            "samples": 102,
+            "descendant_commands": {
+              "ruby": 38620,
+              "gs": 25884
+            }
+          },
+          "iterations": 1,
+          "output_bytes": 9775
+        },
+        "pdf_extract": {
+          "seconds_per_call": 0.22199246706441045,
+          "allocations_per_call": 163.0,
+          "memory": {
+            "parent_rss_kib": 46488,
+            "descendants_rss_sum_kib": 46384,
+            "largest_descendant_rss_kib": 46384,
+            "samples": 47,
+            "descendant_commands": {
+              "ruby": 46384
+            }
+          },
+          "iterations": 1
+        }
+      },
+      "checks": {
+        "xsd_valid": true,
+        "schematron_valid": true,
+        "extracted_xml_exact": true
+      }
+    },
+    {
+      "lines": 100,
+      "xml_bytes": 180919,
+      "xml_sha256": "89c32012b58fcfc04bb3cb2c1188a80430906690f65b99b8c63fd6ff6de8b098",
+      "stages": {
+        "xml_parse": {
+          "seconds_per_call": 0.0034512680334349475,
+          "allocations_per_call": 14.0,
+          "memory": {
+            "parent_rss_kib": 51544,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 7,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "xml_write_with_xsd": {
+          "seconds_per_call": 0.03453723333465556,
+          "allocations_per_call": 72836.0,
+          "memory": {
+            "parent_rss_kib": 52000,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 24,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "xsd_only_warm": {
+          "seconds_per_call": 0.0003709096151093642,
+          "allocations_per_call": 85.0,
+          "memory": {
+            "parent_rss_kib": 52000,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 5,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "schematron_only": {
+          "seconds_per_call": 0.2802708661183715,
+          "allocations_per_call": 487.0,
+          "memory": {
+            "parent_rss_kib": 52940,
+            "descendants_rss_sum_kib": 150544,
+            "largest_descendant_rss_kib": 150544,
+            "samples": 58,
+            "descendant_commands": {
+              "Transform": 150544
+            }
+          },
+          "iterations": 1
+        },
+        "pdf_compose_with_verification": {
+          "seconds_per_call": 0.4915511510334909,
+          "allocations_per_call": 802.0,
+          "memory": {
+            "parent_rss_kib": 52940,
+            "descendants_rss_sum_kib": 39388,
+            "largest_descendant_rss_kib": 39388,
+            "samples": 99,
+            "descendant_commands": {
+              "ruby": 39388,
+              "gs": 26956
+            }
+          },
+          "iterations": 1,
+          "output_bytes": 11658
+        },
+        "pdf_extract": {
+          "seconds_per_call": 0.2745204148814082,
+          "allocations_per_call": 334.0,
+          "memory": {
+            "parent_rss_kib": 52560,
+            "descendants_rss_sum_kib": 39608,
+            "largest_descendant_rss_kib": 39608,
+            "samples": 58,
+            "descendant_commands": {
+              "ruby": 39608
+            }
+          },
+          "iterations": 1
+        }
+      },
+      "checks": {
+        "xsd_valid": true,
+        "schematron_valid": true,
+        "extracted_xml_exact": true
+      }
+    },
+    {
+      "lines": 500,
+      "xml_bytes": 886924,
+      "xml_sha256": "cea52689c087626456639e2469959256f47f42af942d6cf8958bdf1fc1d963d6",
+      "stages": {
+        "xml_parse": {
+          "seconds_per_call": 0.01772007835097611,
+          "allocations_per_call": 14.0,
+          "memory": {
+            "parent_rss_kib": 72500,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 16,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "xml_write_with_xsd": {
+          "seconds_per_call": 0.1755156770038108,
+          "allocations_per_call": 355412.0,
+          "memory": {
+            "parent_rss_kib": 73852,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 108,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "xsd_only_warm": {
+          "seconds_per_call": 0.0015559323752919834,
+          "allocations_per_call": 85.0,
+          "memory": {
+            "parent_rss_kib": 69808,
+            "descendants_rss_sum_kib": 0,
+            "largest_descendant_rss_kib": 0,
+            "samples": 6,
+            "descendant_commands": {}
+          },
+          "iterations": 3
+        },
+        "schematron_only": {
+          "seconds_per_call": 0.64026561495848,
+          "allocations_per_call": 1845.0,
+          "memory": {
+            "parent_rss_kib": 73332,
+            "descendants_rss_sum_kib": 186404,
+            "largest_descendant_rss_kib": 186404,
+            "samples": 127,
+            "descendant_commands": {
+              "Transform": 186404
+            }
+          },
+          "iterations": 1
+        },
+        "pdf_compose_with_verification": {
+          "seconds_per_call": 0.5228783830534667,
+          "allocations_per_call": 1492.0,
+          "memory": {
+            "parent_rss_kib": 75708,
+            "descendants_rss_sum_kib": 44112,
+            "largest_descendant_rss_kib": 44112,
+            "samples": 105,
+            "descendant_commands": {
+              "ruby": 44112,
+              "gs": 27984
+            }
+          },
+          "iterations": 1,
+          "output_bytes": 17976
+        },
+        "pdf_extract": {
+          "seconds_per_call": 0.22639525611884892,
+          "allocations_per_call": 1024.0,
+          "memory": {
+            "parent_rss_kib": 75708,
+            "descendants_rss_sum_kib": 42452,
+            "largest_descendant_rss_kib": 42452,
+            "samples": 48,
+            "descendant_commands": {
+              "ruby": 42452
+            }
+          },
+          "iterations": 1
+        }
+      },
+      "checks": {
+        "xsd_valid": true,
+        "schematron_valid": true,
+        "extracted_xml_exact": true
+      }
+    }
+  ],
+  "engines": {
+    "saxonc": {
+      "version": "12.10",
+      "executable_sha256": "2edf399b2ca440c18051cf3a894e80290dd1c13fd5589fdd25844fdbddc6a572"
+    },
+    "ghostscript": {
+      "version": "10.06.0",
+      "executable_sha256": "5e58a1a7989741ef1b2a3f5c46ebb5b3553153c6db2f19446521881f6f489033",
+      "zugferd_ps_sha256": "9bdcb12d7fdc3c360cb02028c68c3f54c31539be4f236466728885143bd9ecee",
+      "icc_profile_sha256": "eddaf344b5edea13269e0d20055f335610e5e0b6e33e6e536f2701bc18c5f7d5"
+    }
+  },
+  "memory_interval_seconds": 0.005,
+  "note": "Absolute sampled RSS; descendant sum double-counts shared pages. Sampler is excluded."
+}

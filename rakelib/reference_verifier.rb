@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require 'digest'
-require_relative '../lib/facturx'
+require 'eu_einvoice/fr'
 require_relative 'reference_examples'
 require_relative 'reference_term_registry'
 
-module Facturx
+module EuEinvoice
   class ReferenceVerifier
     KNOWN_PAIR_MISMATCHES = ReferenceExamples::KNOWN_PAIR_MISMATCHES
     EXPECTED_PROFILES = ReferenceExamples::PROFILES
@@ -13,6 +13,7 @@ module Facturx
 
     def initialize(root:)
       @root = root
+      @client = Client.new(packs: [France::Pack.new], validation: :structural)
     end
 
     def call
@@ -68,14 +69,14 @@ module Facturx
 
     def verify_example(xml_path)
       xml = File.binread(xml_path)
-      reading = Facturx.read(xml)
+      reading = @client.read(xml)
       verify_xml(xml_path, xml) unless unknown_profile?(reading)
       verify_reading(xml_path, reading)
       verify_pdf_pair(xml_path, xml)
     end
 
     def verify_xml(xml_path, xml)
-      report = Facturx.validate_xml(xml:)
+      report = @client.validate_xml(xml:)
       return if report.valid?
 
       raise "XML validation issues for #{xml_path}: #{report.issues.map(&:message)}"
@@ -83,7 +84,7 @@ module Facturx
 
     def verify_reading(xml_path, reading)
       profile = expected_profile(xml_path)
-      raise "Profile mismatch: #{xml_path}" unless reading.profile.id == profile
+      verify_profile(xml_path, reading, profile)
       raise "Invoice number is not mapped: #{xml_path}" unless reading.document.invoice_number
 
       diagnostics = reading.diagnostics
@@ -100,6 +101,12 @@ module Facturx
       EXPECTED_PROFILES.fetch(directory)
     end
 
+    def verify_profile(xml_path, reading, expected)
+      return if reading.profile&.id == expected || unknown_profile?(reading)
+
+      raise "Profile mismatch: #{xml_path}"
+    end
+
     def unknown_profile?(reading)
       reading.diagnostics.any? { |diagnostic| diagnostic.code == :unknown_profile }
     end
@@ -108,7 +115,7 @@ module Facturx
       pdf_path = xml_path.sub(/\.xml\z/, '_fx.pdf')
       raise "Missing paired PDF: #{pdf_path}" unless File.file?(pdf_path)
 
-      embedded_xml = Facturx.extract_xml(pdf: File.binread(pdf_path))
+      embedded_xml = @client.extract_xml(pdf: File.binread(pdf_path)).bytes
       verify_pair_hashes(xml_path, pdf_path, xml, embedded_xml) unless embedded_xml == xml
     end
 

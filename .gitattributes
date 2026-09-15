@@ -1,3 +1,3 @@
-lib/facturx/schema/** -text -whitespace
-facturx-schematron/lib/facturx/schematron/rules/1.09.2/** -text -whitespace
-facturx-schematron/spec/fixtures/xml/*.xml -text -whitespace
+gems/eu-einvoice-fr/lib/eu_einvoice/schema/** -text -whitespace
+gems/eu-einvoice-validation-fr/lib/eu_einvoice/schematron/rules/** -text -whitespace
+spec/validation_fr/fixtures/xml/*.xml -text -whitespace

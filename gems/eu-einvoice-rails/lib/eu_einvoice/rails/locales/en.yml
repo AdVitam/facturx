@@ -1,0 +1,4 @@
+en:
+  eu_einvoice:
+    errors:
+      invalid: "Invalid invoice data"

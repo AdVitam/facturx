@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Facturx
+module EuEinvoice
   module ReferenceExamples
     KNOWN_PAIR_MISMATCHES = {
       '3. EN16931/E04_Betriebskostenabrechnung_NEU/E04_01_Betriebskostenabrechnung_NEU.xml' => %w[

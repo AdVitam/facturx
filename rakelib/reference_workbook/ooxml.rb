@@ -2,7 +2,7 @@
 
 require 'nokogiri'
 
-module Facturx
+module EuEinvoice
   class ReferenceWorkbook
     class Ooxml
       XML_NAMESPACE = { 'x' => 'http://schemas.openxmlformats.org/spreadsheetml/2006/main' }.freeze
