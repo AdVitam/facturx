@@ -18,17 +18,34 @@ module EuEinvoice
     class Pack
       include EuEinvoice::Pack
 
-      sig { params(version: String).void }
-      def initialize(version: '1.09.2'); end
+      sig { params(version: String, ghostscript_locator: T.nilable(Object)).void }
+      def initialize(version: '1.09.2', ghostscript_locator: nil); end
 
       sig { override.returns(T::Array[EuEinvoice::Specification]) }
       attr_reader :specifications
+
+      sig { override.params(validation: Symbol, limits: EuEinvoice::ResourceLimits).returns(EuEinvoice::Adapter) }
+      def adapter(validation:, limits: EuEinvoice::ResourceLimits.new); end
 
       sig { params(profile: Symbol).returns(EuEinvoice::Specification) }
       def specification(profile: :en16931); end
 
       sig { params(profile: Symbol).returns(EuEinvoice::Policy) }
       def policy(profile: :en16931); end
+
+      sig { params(pdf: T.any(String, IO, StringIO, Tempfile, EuEinvoice::Artifact), limits: EuEinvoice::ResourceLimits).returns(String) }
+      def extract_xml(pdf:, limits: EuEinvoice::ResourceLimits.new); end
+
+      sig do
+        params(pdf: T.any(String, IO, StringIO, Tempfile, EuEinvoice::Artifact),
+               xml: T.any(String, IO, StringIO, Tempfile, EuEinvoice::Artifact),
+               specification: EuEinvoice::Specification, limits: EuEinvoice::ResourceLimits).returns(String)
+      end
+      def compose(pdf:, xml:, specification:, limits: EuEinvoice::ResourceLimits.new); end
+    end
+
+    class Adapter
+      include EuEinvoice::Adapter
     end
 
     class InvalidAddressError < EuEinvoice::Error; end

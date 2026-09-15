@@ -26,7 +26,8 @@ module TypeSmoke
     check(command, 0, File.join(__dir__, 'typecheck/usage.rb'))
     check(command, 100, '-e', 'EuEinvoice::Document.build(invoice_number: 123)')
     check(command, 100, '-e', 'EuEinvoice::Document.build { |builder| builder.buyer(name: 123) }')
-    puts 'Shipped RBI smoke: valid usage accepted; invalid constructor and nested-builder types rejected.'
+    check(command, 100, '-e', 'class IncompletePack; include EuEinvoice::Pack; def specifications; []; end; end')
+    puts 'Shipped RBI smoke: valid usage accepted; invalid constructors, nested builders and incomplete packs rejected.'
   end
 end
 

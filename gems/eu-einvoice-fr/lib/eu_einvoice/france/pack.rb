@@ -12,9 +12,10 @@ module EuEinvoice
 
       attr_reader :specifications
 
-      def initialize(version: VERSION)
+      def initialize(version: VERSION, ghostscript_locator: nil)
         raise UnsupportedProfileError.new('Unsupported Factur-X version', version:) unless version == VERSION
 
+        @ghostscript_locator = ghostscript_locator || Composers::Ghostscript::Locator.new
         @specifications = Profiles.all.map do |profile|
           Specification.new(id: "factur-x/#{version}/#{profile.id}", version:, profile:,
                             manifest: Manifest.for_profile(profile, version:))
@@ -40,7 +41,8 @@ module EuEinvoice
       end
 
       def compose(pdf:, xml:, specification:, limits: ResourceLimits.new)
-        Pdf::Composer.new(limits:, embedding: EMBEDDING).call(pdf:, xml:, profile: specification.profile)
+        backend = Composers::Ghostscript.new(embedding: EMBEDDING, limits:, locator: @ghostscript_locator)
+        Pdf::Composer.new(limits:, embedding: EMBEDDING, backend:).call(pdf:, xml:, profile: specification.profile)
       end
     end
   end

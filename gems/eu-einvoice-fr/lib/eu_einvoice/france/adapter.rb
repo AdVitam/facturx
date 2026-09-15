@@ -7,6 +7,7 @@ require 'eu_einvoice/france/pipelines'
 module EuEinvoice
   module France
     class Adapter
+      include EuEinvoice::Adapter
       include AdapterReporting
 
       def initialize(specifications:, validation:, limits: ResourceLimits.new, schema_root: Manifest::ROOT,

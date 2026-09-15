@@ -161,13 +161,7 @@ module EuEinvoice
       def terminate(wait_thread)
         signal('TERM', wait_thread.pid)
         # The process group can outlive its leader and retain our pipes.
-        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + @termination_grace
-        loop do
-          remaining = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          break unless remaining.positive?
-
-          sleep([remaining, 0.01].min)
-        end
+        sleep(@termination_grace) if @termination_grace.positive?
         signal('KILL', wait_thread.pid)
         wait_thread.join(@termination_grace)
       end

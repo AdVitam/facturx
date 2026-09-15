@@ -98,7 +98,8 @@ module EuEinvoice
       end
       return candidates.first if candidates.one?
 
-      raise AmbiguousSpecificationError.new('Cannot select a unique tolerant reader', candidates: candidates.size)
+      error = candidates.empty? ? UnknownProfileError : AmbiguousSpecificationError
+      raise error.new('No unique tolerant reader for this XML', candidates: candidates.size)
     end
 
     def invalid_xml_report(error, specification)

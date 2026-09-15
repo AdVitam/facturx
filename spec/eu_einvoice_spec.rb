@@ -111,6 +111,21 @@ RSpec.describe EuEinvoice::Client do
     expect { multi.read(xml) }.to raise_error(EuEinvoice::AmbiguousSpecificationError)
   end
 
+  it 'reports an unsupported XML syntax without mislabelling it as ambiguous' do
+    adapter = Object.new
+    adapter.define_singleton_method(:prepare) { |xml:| xml }
+    adapter.define_singleton_method(:detect) { |**| [] }
+    adapter.define_singleton_method(:can_read?) { |**| false }
+    unsupported_pack = Struct.new(:specifications, :client_adapter) do
+      def adapter(**) = client_adapter
+    end.new([specification], adapter)
+    unsupported = described_class.new(packs: [unsupported_pack], validation: :structural)
+
+    expect { unsupported.read('<ubl/>') }.to raise_error(EuEinvoice::UnknownProfileError) do |error|
+      expect(error.details).to include(candidates: 0)
+    end
+  end
+
   it 'reports malformed XML as an invalid validation report' do
     expect(client.validate_xml(xml: '<broken')).to be_invalid
   end

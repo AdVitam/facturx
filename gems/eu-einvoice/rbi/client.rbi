@@ -6,6 +6,13 @@ module EuEinvoice
 
     sig { abstract.returns(T::Array[EuEinvoice::Specification]) }
     def specifications; end
+
+    sig { abstract.params(validation: Symbol, limits: EuEinvoice::ResourceLimits).returns(EuEinvoice::Adapter) }
+    def adapter(validation:, limits:); end
+  end
+
+  module Adapter
+    interface!
   end
 
   module Instrumenter

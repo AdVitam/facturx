@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
+require_relative '../../pdf/support/pdf_builder'
+
 RSpec.describe EuEinvoice::Pdf::Composer do
+  include PdfSupport
+
   subject(:composer) do
     described_class.new(embedding: EuEinvoice::France::EMBEDDING, adapters: described_class::Adapters.new(**adapters))
   end
@@ -42,6 +46,21 @@ RSpec.describe EuEinvoice::Pdf::Composer do
     adapters.fetch(:verifier).error = EuEinvoice::VerificationError.new('invalid output')
 
     expect { composer.call(pdf: '%PDF', xml: '<xml/>', profile:) }.to raise_error(EuEinvoice::VerificationError)
+  end
+
+  it 'uses an injected backend without requiring a full adapter bundle' do
+    backend = adapter(:compose, build_pdf)
+    injected = described_class.new(embedding: EuEinvoice::France::EMBEDDING, backend:)
+
+    expect { injected.call(pdf: build_pdf, xml: '<xml/>', profile:) }.to raise_error(EuEinvoice::ExtractionError)
+    expect(events).to include([:compose, [], { pdf: a_string_starting_with('%PDF-'), xml: '<xml/>', profile: }])
+  end
+
+  it 'rejects competing backend injection styles' do
+    expect do
+      described_class.new(embedding: EuEinvoice::France::EMBEDDING, backend: adapter(:compose, '%PDF-A'),
+                          adapters: described_class::Adapters.new(**adapters))
+    end.to raise_error(ArgumentError)
   end
 
   def adapter(name, result)
