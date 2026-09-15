@@ -22,8 +22,9 @@ module EuEinvoice
       end
 
       def fingerprint(profile)
-        resources = manifest_for(profile).fetch(:resources)
-        Digest::SHA256.hexdigest(resources.sort.flatten.join("\0"))
+        manifest = manifest_for(profile)
+        identity = [manifest.fetch(:schema_entrypoint), *manifest.fetch(:resources).sort.flatten]
+        Digest::SHA256.hexdigest(identity.join("\0"))
       end
 
       private

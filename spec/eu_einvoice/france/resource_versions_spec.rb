@@ -24,6 +24,17 @@ RSpec.describe 'Specification resource isolation', :aggregate_failures do
     expect(threads.flat_map(&:value)).to all(be(true))
   end
 
+  it 'distinguishes entrypoints even when specifications share an identical resource catalog' do
+    catalog = alpha.resources.merge(beta.resources)
+    specifications = [alpha, beta].map { |spec| spec.with(manifest: spec.manifest.merge(resources: catalog)) }
+    shared = EuEinvoice::France::Adapter.new(specifications:, validation: :structural, schema_root: root)
+    reports = specifications.flat_map do |spec|
+      [shared.validate_xml(xml: xml(spec.version), specification: spec),
+       shared.validate_xml(xml: xml(spec.version == 'alpha' ? 'beta' : 'alpha'), specification: spec)]
+    end
+    expect(reports.map(&:valid?)).to eq([true, false, true, false])
+  end
+
   it 'runs distinct rules and adjacent code lists through real SaxonC', :saxonc do
     full = build_adapter(:full)
     reports = [alpha, beta].map { |spec| full.validate_xml(xml: xml(spec.version), specification: spec) }

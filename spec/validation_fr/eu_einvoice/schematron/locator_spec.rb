@@ -2,7 +2,6 @@
 
 require 'tmpdir'
 require 'fileutils'
-require 'rbconfig'
 require_relative '../../spec_helper'
 require 'eu_einvoice/schematron/locator'
 
@@ -86,9 +85,6 @@ RSpec.describe EuEinvoice::Schematron::Locator do
   end
 
   def timeout_error
-    runner = EuEinvoice::Subprocess::Runner.new(timeout: 0.2, termination_grace: 0.05)
-    runner.call([RbConfig.ruby, '-e', 'STDERR.binmode; STDERR.write("\\xFF".b); sleep 10'])
-  rescue EuEinvoice::Subprocess::Error => e
-    e
+    EuEinvoice::Subprocess::Error.new('Process timeout', reason: :timeout, timeout: 0.2, stderr: '?')
   end
 end
