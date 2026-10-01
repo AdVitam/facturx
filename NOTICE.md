@@ -2,9 +2,9 @@
 
 ## Factur-X validation schemas
 
-The gem includes Factur-X 1.09.2 / ZUGFeRD 2.5.2 XSD validation artefacts. Their Apache License 2.0 text, provenance, RubyGems packaging adaptation, and file checksums are packaged under `lib/facturx/schema/`.
+The French package includes Factur-X 1.09.2 / ZUGFeRD 2.5.2 XSD validation artefacts. Their Apache License 2.0 text, provenance, RubyGems packaging adaptation, and file checksums are packaged under `gems/eu-einvoice-fr/lib/eu_einvoice/schema/`.
 
-The semantic term registry is derived from the official Factur-X 1.09.2 profile workbooks. The workbooks and examples are not redistributed; their expected paths and SHA-256 checksums are recorded in `Facturx::Terms::REFERENCE_FILES` for maintainer verification.
+The semantic term registry is derived from the official Factur-X 1.09.2 profile workbooks. Reference workbook paths and SHA-256 checksums are recorded in `EuEinvoice::Terms::REFERENCE_FILES` for maintainer verification. Bundled XML examples carry their own provenance notices.
 
 ## Ghostscript
 

@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+<% module_namespacing do -%>
+class <%= class_name %>Mapper
+  def call(record)
+    EuEinvoice::Document.build do |invoice|
+      invoice.invoice_number = record.id.to_s
+      # Map dates, seller, buyer, lines and totals explicitly from your application.
+    end
+  end
+end
+<% end -%>

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### EuEinvoice 1.0.0 foundation
+
+- Extract a central European invoice client/model with independent CII, PDF, French, validation and Rails packages.
+- Add immutable versioned specifications, explicit local resolution and validation provenance without global companion activation.
+- Add bounded IO/XML/PDF processing, isolated PDF workers and subprocess group cleanup.
+- Add French addressing, official Rails integration and independent artifact streams.
+- Preserve the Factur-X corpus and extend real-engine, package and framework checks.
+- Prepare new package identities without aliases or republishing historical Facturx gems.
+
 ## [1.2.0] - 2026-09-14
 
 ### Add

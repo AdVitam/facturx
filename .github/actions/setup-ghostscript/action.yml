@@ -16,4 +16,4 @@ runs:
         path="$RUNNER_TEMP/zugferd.ps"
         curl --fail --location --silent --show-error "$ZUGFERD_PS_URL" --output "$path"
         echo "$ZUGFERD_PS_SHA256  $path" | sha256sum --check --strict
-        echo "FACTURX_ZUGFERD_PS=$path" >> "$GITHUB_ENV"
+        echo "EU_EINVOICE_ZUGFERD_PS=$path" >> "$GITHUB_ENV"

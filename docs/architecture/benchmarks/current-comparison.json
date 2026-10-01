@@ -1,0 +1,60 @@
+{
+  "ruby": "ruby 4.0.6 (2026-07-14 revision 03b6d3f889) +PRISM [x86_64-linux]",
+  "mode": "current",
+  "fixture_sha256": "bbe72251c63614ffb2bc5ffaf8dcb2cf044d399346e5965b3ff2cdb0a1d563df",
+  "iterations": 10,
+  "xsd_cold": {
+    "seconds_per_call": 0.0017702970653772354,
+    "allocations_per_call": 496
+  },
+  "samples": [
+    {
+      "lines": 1,
+      "bytes": 6276,
+      "build_xml": {
+        "seconds_per_call": 0.001638434501364827,
+        "allocations_per_call": 2627.3
+      },
+      "read": {
+        "seconds_per_call": 0.0023058091988787054,
+        "allocations_per_call": 3887.4
+      },
+      "xsd_warm": {
+        "seconds_per_call": 0.0005106482887640596,
+        "allocations_per_call": 177.3
+      }
+    },
+    {
+      "lines": 100,
+      "bytes": 180905,
+      "build_xml": {
+        "seconds_per_call": 0.034108454710803926,
+        "allocations_per_call": 65935
+      },
+      "read": {
+        "seconds_per_call": 0.03719903461169451,
+        "allocations_per_call": 95862
+      },
+      "xsd_warm": {
+        "seconds_per_call": 0.004010743903927505,
+        "allocations_per_call": 177.3
+      }
+    },
+    {
+      "lines": 500,
+      "bytes": 886905,
+      "build_xml": {
+        "seconds_per_call": 0.15514523978345096,
+        "allocations_per_call": 321711
+      },
+      "read": {
+        "seconds_per_call": 0.22538783019408584,
+        "allocations_per_call": 467462.4
+      },
+      "xsd_warm": {
+        "seconds_per_call": 0.019272445095703007,
+        "allocations_per_call": 177.3
+      }
+    }
+  ]
+}

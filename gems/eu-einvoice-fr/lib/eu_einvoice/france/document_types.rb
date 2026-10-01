@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+module EuEinvoice
+  module France
+    DOCUMENT_TYPE_CODES = %w[
+      71 80 81 82 83 84 102 130 202 203 204 211 218 219 261 262 295 296 308 325
+      326 331 380 381 382 383 384 385 386 387 388 389 390 393 394 395 396 420 456 457
+      458 471 472 473 500 501 502 503 527 532 553 575 623 633 751 780 817 870 875 876
+      877 935
+    ].freeze
+    DOCUMENT_TYPES = %i[minimum basic_wl basic en16931 extended].to_h do |profile|
+      [profile, DOCUMENT_TYPE_CODES]
+    end.freeze
+  end
+end

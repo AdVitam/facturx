@@ -3,7 +3,7 @@
 require 'zip'
 require_relative 'reference_workbook/ooxml'
 
-module Facturx
+module EuEinvoice
   class ReferenceWorkbook
     TERM_ID_PATTERN = /\ABT-\d+(?:-\d+)*\z/
     CARDINALITY_PATTERN = /\A[01]\.\.(?:1|n)\z/i

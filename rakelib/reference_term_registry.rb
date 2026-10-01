@@ -2,7 +2,7 @@
 
 require_relative 'reference_workbook'
 
-module Facturx
+module EuEinvoice
   class ReferenceTermRegistry
     def initialize(root:)
       @root = root
@@ -25,7 +25,7 @@ module Facturx
 
     def mismatches(profile_id, official)
       Terms.all.filter_map do |term|
-        expected = term.cardinalities[profile_id]
+        expected = Profiles.fetch(profile_id).cardinality(term)
         actual = official[term.id]
         "#{term.id}: declared #{expected.inspect}, official #{actual.inspect}" unless expected == actual
       end

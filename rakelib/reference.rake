@@ -8,6 +8,6 @@ namespace :reference do
     root = ENV.fetch('FACTURX_REFERENCE_ROOT') do
       raise 'FACTURX_REFERENCE_ROOT must point to the extracted Factur-X 1.09.2 / ZUGFeRD 2.5.2 package'
     end
-    Facturx::ReferenceVerifier.new(root:).call
+    EuEinvoice::ReferenceVerifier.new(root:).call
   end
 end

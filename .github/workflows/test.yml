@@ -6,6 +6,16 @@ on:
   pull_request:
 
 jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+      - run: gem install sorbet-static --version 0.6.13499 --no-document
+      - run: ruby tooling/check_types.rb
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -14,15 +24,25 @@ jobs:
         with:
           ruby-version: '4.0'
           bundler-cache: true
-      - run: bundle exec rubocop
+      - run: ruby tooling/lint.rb
 
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        ruby: ['3.2', '3.3', '3.4', '4.0']
-    name: Ruby ${{ matrix.ruby }}
+        include:
+          - ruby: '3.2'
+            rails: '~> 7.2.0'
+          - ruby: '3.3'
+            rails: '~> 8.0.0'
+          - ruby: '3.4'
+            rails: '~> 8.1.0'
+          - ruby: '4.0'
+            rails: '~> 8.1.0'
+    name: Ruby ${{ matrix.ruby }} / Rails ${{ matrix.rails }}
+    env:
+      RAILS_VERSION: ${{ matrix.rails }}
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-ghostscript
@@ -30,31 +50,10 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - run: bundle exec rake
+          cache-version: ${{ matrix.rails }}
+      - run: bundle exec rspec --tag '~saxonc'
 
-  schematron-conformance:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '4.0'
-          bundler-cache: true
-      - name: Install SaxonC-HE 12.10
-        env:
-          SAXONC_SHA256: 8db496a54568fac34950d4e581e832087c82dd0924545f67a5c56031c003d9ce
-          SAXONC_URL: https://downloads.saxonica.com/SaxonC/HE/12/SaxonCHE-linux-x86_64-12-10-0.zip
-        run: |
-          curl --fail --location --silent --show-error "$SAXONC_URL" --output "$RUNNER_TEMP/saxonc.zip"
-          echo "$SAXONC_SHA256  $RUNNER_TEMP/saxonc.zip" | sha256sum --check --strict
-          unzip -q "$RUNNER_TEMP/saxonc.zip" -d "$RUNNER_TEMP"
-      - name: Validate official Factur-X examples
-        env:
-          FACTURX_SAXONC_TRANSFORM: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/bin/Transform
-          LD_LIBRARY_PATH: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/lib:${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCCoreHE/lib
-        run: bundle exec rspec facturx-schematron/spec --tag saxonc
-
-  pdfa-conformance:
+  conformance:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -67,19 +66,30 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Download veraPDF 1.30.2
+      - name: Install pinned SaxonC and veraPDF
         env:
+          SAXONC_SHA256: 8db496a54568fac34950d4e581e832087c82dd0924545f67a5c56031c003d9ce
+          SAXONC_URL: https://downloads.saxonica.com/SaxonC/HE/12/SaxonCHE-linux-x86_64-12-10-0.zip
           VERAPDF_SHA256: 0a3e8da7240fc18c6f9556a1aea670764f42a9a7fe772060385326706dfd1b5b
           VERAPDF_URL: https://artifactory.openpreservation.org/artifactory/vera-dev/org/verapdf/apps/cli/1.30.2/cli-1.30.2.jar
         run: |
+          curl --fail --location --silent --show-error "$SAXONC_URL" --output "$RUNNER_TEMP/saxonc.zip"
+          echo "$SAXONC_SHA256  $RUNNER_TEMP/saxonc.zip" | sha256sum --check --strict
+          unzip -q "$RUNNER_TEMP/saxonc.zip" -d "$RUNNER_TEMP"
           curl --fail --location --silent --show-error "$VERAPDF_URL" --output "$RUNNER_TEMP/verapdf.jar"
           echo "$VERAPDF_SHA256  $RUNNER_TEMP/verapdf.jar" | sha256sum --check --strict
-      - name: Generate Factur-X PDF
-        run: bundle exec ruby spec/support/generate_verapdf_fixture.rb "$RUNNER_TEMP/facturx.pdf"
-      - name: Validate PDF/A-3b conformance
-        run: >-
-          java -jar "$RUNNER_TEMP/verapdf.jar" --flavour 3b
-          --maxfailuresdisplayed 10 "$RUNNER_TEMP/facturx.pdf"
+      - name: Official Schematron corpus
+        env:
+          EU_EINVOICE_SAXONC_TRANSFORM: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/bin/Transform
+          LD_LIBRARY_PATH: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/lib:${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCCoreHE/lib
+        run: bundle exec rspec --tag saxonc
+      - name: Verify PDF/A-3b for every profile
+        run: |
+          for profile in minimum basic_wl basic en16931 extended; do
+            bundle exec ruby spec/support/generate_verapdf_fixture.rb "$RUNNER_TEMP/$profile.pdf" "$profile"
+            java -jar "$RUNNER_TEMP/verapdf.jar" --flavour 3b --format xml "$RUNNER_TEMP/$profile.pdf" > "$RUNNER_TEMP/$profile-verapdf.xml"
+            bundle exec ruby tooling/check_verapdf.rb "$RUNNER_TEMP/$profile-verapdf.xml"
+          done
 
   package:
     runs-on: ubuntu-latest
@@ -89,27 +99,6 @@ jobs:
         with:
           ruby-version: '4.0'
           bundler-cache: true
-      - name: Verify bundled schema integrity
-        working-directory: lib/facturx/schema
-        run: sha256sum --check --strict SHA256SUMS
-      - name: Verify bundled Schematron integrity
-        working-directory: facturx-schematron/lib/facturx/schematron/rules
-        run: sha256sum --check --strict SHA256SUMS
-      - name: Build and inspect gems
-        run: |
-          bundle exec rake build_all
-          gem specification pkg/facturx-[0-9]*.gem --yaml > /dev/null
-          gem specification pkg/facturx-schematron-*.gem --yaml > /dev/null
-          gem install pkg/facturx-[0-9]*.gem --no-document
-          gem install pkg/facturx-schematron-*.gem --no-document
-          ruby -e "require 'facturx'; abort unless Facturx::VERSION; abort if defined?(Facturx::Schematron)"
-          ruby -e "
-            ENV['FACTURX_SAXONC_TRANSFORM'] = '/bin/false'
-            begin
-              require 'facturx/schematron'
-            rescue Facturx::Schematron::UnavailableError => error
-              abort unless error.details[:reason] == :probe_failed
-            else
-              abort
-            end
-          "
+      - run: bundle exec rake build_all
+      - name: Install built artifacts outside the checkout
+        run: bundle exec ruby tooling/verify_packages.rb

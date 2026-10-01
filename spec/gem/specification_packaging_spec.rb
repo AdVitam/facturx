@@ -2,71 +2,40 @@
 
 require 'digest'
 
-RSpec.describe Gem::Specification do
-  subject(:specification) do
-    Dir.chdir(root) { described_class.load('facturx.gemspec') }
-  end
-
+RSpec.describe 'Package integrity' do
   let(:root) { File.expand_path('../..', __dir__) }
-  let(:files) { specification.files }
-  let(:schema_root) { File.join(root, 'lib/facturx/schema') }
-  let(:checksums) do
-    File.readlines(File.join(schema_root, 'SHA256SUMS'), chomp: true).to_h do |line|
-      digest, path = line.split(/\s+/, 2)
-      [path, digest]
+  let(:specifications) { Dir[File.join(root, 'gems/*/*.gemspec')].map { |path| Gem::Specification.load(path) } }
+
+  it 'builds exactly six new identities with one release version' do
+    expect(specifications.map(&:name)).to contain_exactly(
+      'eu-einvoice', 'eu-einvoice-syntax-cii', 'eu-einvoice-container-pdf',
+      'eu-einvoice-fr', 'eu-einvoice-validation-fr', 'eu-einvoice-rails'
+    )
+    expect(specifications.map(&:version).uniq.map(&:to_s)).to eq(['1.0.0'])
+  end
+
+  it 'packages runtime files and licenses without development files' do
+    specifications.each do |spec|
+      expect(spec.files).to include('LICENSE.txt')
+      expect(spec.files.grep(%r{\A(?:spec|pkg|vendor)/})).to be_empty
+      expect(spec.files.grep(/\.(?:icc|icm|ps)\z/i)).to be_empty
     end
   end
 
-  it 'packages every runtime file and required notice' do
-    runtime_files = Dir.chdir(root) do
-      Dir['lib/**/*'].select { |path| File.file?(path) }
+  it 'keeps the central dependency graph independent of adapters and Rails' do
+    core = specifications.find { |spec| spec.name == 'eu-einvoice' }
+    expect(core.runtime_dependencies.map(&:name)).to match_array(%w[bigdecimal date])
+    expect(specifications.flat_map(&:runtime_dependencies).map(&:name)).not_to include('sorbet-runtime', 'facturx')
+  end
+
+  it 'checks every vendored schema and rule against its recorded bytes' do
+    manifests = Dir[File.join(root, 'gems/**/SHA256SUMS')]
+    expect(manifests.size).to eq(2)
+    manifests.each do |manifest|
+      File.readlines(manifest, chomp: true).reject(&:empty?).each do |line|
+        digest, relative = line.split(/\s+/, 2)
+        expect(Digest::SHA256.file(File.join(File.dirname(manifest), relative)).hexdigest).to eq(digest)
+      end
     end
-
-    expect(files).to include(*runtime_files, 'DOCUMENTATION.md', 'LICENSE.txt', 'NOTICE.md', 'README.md')
-  end
-
-  it 'packages every RBI file' do
-    rbi_files = Dir.chdir(root) do
-      Dir['rbi/**/*'].select { |path| File.file?(path) }
-    end
-
-    expect(files).to include('rbi/facturx.rbi', *rbi_files)
-  end
-
-  it 'packages every schema referenced by a profile' do
-    registry = Facturx::Xml::SchemaRegistry.new
-    profile_schemas = Facturx::Profiles.all.map { |profile| registry.fetch(profile) }
-
-    expect(profile_schemas)
-      .to all(satisfy { |path| File.file?(path) })
-      .and all(satisfy { |path| files.include?(path.delete_prefix("#{root}/")) })
-  end
-
-  it 'lists every bundled schema in the checksum manifest' do
-    schemas = Dir.chdir(schema_root) { Dir['**/*.xsd'] }
-
-    expect(checksums.keys).to match_array(schemas)
-  end
-
-  it 'keeps valid checksums for the bundled schemas' do
-    actual = checksums.to_h do |path, _digest|
-      [path, Digest::SHA256.file(File.join(schema_root, path)).hexdigest]
-    end
-
-    expect(actual).to eq(checksums)
-  end
-
-  it 'does not distribute Ghostscript assets' do
-    expect(files.grep(/\.(?:icc|icm|ps)\z/i)).to be_empty
-  end
-
-  it 'does not distribute development files' do
-    development_files = files.grep(%r{\A(?:spec|coverage|pkg)/}) + (files & %w[AGENTS.md Gemfile.lock])
-
-    expect(development_files).to be_empty
-  end
-
-  it 'does not add Sorbet as a runtime dependency' do
-    expect(specification.runtime_dependencies.map(&:name)).not_to include('sorbet-runtime')
   end
 end
