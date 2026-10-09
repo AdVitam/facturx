@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-09
+
+### Add
+
+- Test the lowest supported dependency versions (`nokogiri` 1.13.0, `pdf-reader` 2.16.0) in CI.
+
+### Fix
+
+- Bound `nokogiri` below 2 so a future major release cannot be installed unseen.
+
 ## [1.2.0] - 2026-09-14
 
 ### Add
@@ -72,7 +82,8 @@ All notable changes to this project will be documented in this file.
 - Compose PDF/A-3b Factur-X documents with Ghostscript.
 - Extract embedded Factur-X XML from PDF documents.
 
-[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/AdVitam/facturx/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/AdVitam/facturx/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/AdVitam/facturx/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/AdVitam/facturx/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AdVitam/facturx/compare/v0.2.0...v1.0.0

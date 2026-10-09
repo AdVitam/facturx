@@ -32,6 +32,20 @@ jobs:
           bundler-cache: true
       - run: bundle exec rake
 
+  minimum:
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: gemfiles/minimum.gemfile
+    name: Minimum dependency versions
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-ghostscript
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      - run: bundle exec rake
+
   schematron-conformance:
     runs-on: ubuntu-latest
     steps:
