@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+gemspec path: '..'
+
+Bundler.load_gemspec(File.expand_path('../facturx.gemspec', __dir__)).runtime_dependencies.each do |dep|
+  floor = dep.requirement.requirements.find { |op, _| op == '>=' }
+  gem dep.name, "= #{floor.last}" if floor
+end
+
+group :development, :test do
+  gem 'rake'
+  gem 'rspec'
+  gem 'rubyzip', '~> 3.6'
+end

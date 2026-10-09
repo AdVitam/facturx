@@ -30,6 +30,6 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'nokogiri', '>= 1.13'
+  spec.add_dependency 'nokogiri', '>= 1.13', '< 2'
   spec.add_dependency 'pdf-reader', '>= 2.16', '< 3'
 end
