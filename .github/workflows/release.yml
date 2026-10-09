@@ -20,7 +20,7 @@ jobs:
           bundler-cache: true
       - name: Build gems
         run: bundle exec rake build_all
-      - uses: rubygems/configure-rubygems-credentials@6861877652452567c1a007a50badad3d316fc9ba
+      - uses: rubygems/configure-rubygems-credentials@8674aee7f9f9055a8b771794d6f1e66b5fad36a9
       - name: Push gems to RubyGems
         run: |
           for gem in \
