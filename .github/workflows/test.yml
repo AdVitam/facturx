@@ -54,18 +54,18 @@ jobs:
         with:
           ruby-version: '4.0'
           bundler-cache: true
-      - name: Install SaxonC-HE 12.10
+      - name: Install SaxonC-HE 12.10.1
         env:
-          SAXONC_SHA256: 8db496a54568fac34950d4e581e832087c82dd0924545f67a5c56031c003d9ce
-          SAXONC_URL: https://downloads.saxonica.com/SaxonC/HE/12/SaxonCHE-linux-x86_64-12-10-0.zip
+          SAXONC_SHA256: 13916bde13ec3e13e8dd81816a413f82248400a7899bcca25debf2eead74f65b
+          SAXONC_URL: https://downloads.saxonica.com/SaxonC/HE/12/SaxonCHE-linux-x86_64-12-10-1.zip
         run: |
           curl --fail --location --silent --show-error "$SAXONC_URL" --output "$RUNNER_TEMP/saxonc.zip"
           echo "$SAXONC_SHA256  $RUNNER_TEMP/saxonc.zip" | sha256sum --check --strict
           unzip -q "$RUNNER_TEMP/saxonc.zip" -d "$RUNNER_TEMP"
       - name: Validate official Factur-X examples
         env:
-          FACTURX_SAXONC_TRANSFORM: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/bin/Transform
-          LD_LIBRARY_PATH: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCHE/lib:${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-0/SaxonCCoreHE/lib
+          FACTURX_SAXONC_TRANSFORM: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-1/SaxonCHE/bin/Transform
+          LD_LIBRARY_PATH: ${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-1/SaxonCHE/lib:${{ runner.temp }}/SaxonCHE-linux-x86_64-12-10-1/SaxonCCoreHE/lib
         run: bundle exec rspec facturx-schematron/spec --tag saxonc
 
   pdfa-conformance:
